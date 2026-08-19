@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo — unsupported form</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="demo-banner">
+        DEMO FORM — for testing Assistigo only. Nothing is submitted.
+      </p>
+
+      <h1>Unsupported form</h1>
+      <p class="muted">
+        Field names here are deliberately opaque, the way a legacy portal's often are. Assistigo
+        should stay useful: offer low-confidence guesses that require confirmation, leave the
+        rest unmapped, and let the operator report the form — without breaking.
+      </p>
+
+      <form id="odd-form" onsubmit="return false;">
+        <h2>Section A</h2>
+        <table>
+          <tr>
+            <td>Particulars of the applicant</td>
+            <td><input type="text" name="f1" id="f1" /></td>
+          </tr>
+          <tr>
+            <td>Parentage</td>
+            <td><input type="text" name="f2" id="f2" /></td>
+          </tr>
+          <tr>
+            <td>Ref. No. (as per Annexure II)</td>
+            <td><input type="text" name="f3" id="f3" /></td>
+          </tr>
+          <tr>
+            <td>Sanction order date</td>
+            <td><input type="text" name="f4" id="f4" /></td>
+          </tr>
+          <tr>
+            <td>Zone code</td>
+            <td><input type="text" name="f5" id="f5" /></td>
+          </tr>
+        </table>
+
+        <h2>Section B</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="f6">Correspondence Address</label>
+            <textarea id="f6" name="f6" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label for="f7">Contact Number</label>
+            <input type="tel" id="f7" name="f7" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Proceed</button>
+          <span class="submit-note">Assistigo never clicks this.</span>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

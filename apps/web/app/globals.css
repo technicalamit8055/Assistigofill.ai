@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-blue-500/20 selection:text-blue-900;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /*
+   * Devanagari sits taller than Latin at the same font-size. A slightly looser line-height on
+   * Hindi pages stops labels colliding in dense tables (spec §20.3).
+   */
+  html[lang='hi'] body {
+    line-height: 1.65;
+  }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-blue-600;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-slate-200/80 hover:border-blue-400/50 shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .glass-card-glow {
+    @apply bg-white/90 backdrop-blur-2xl border border-slate-200 shadow-[0_10px_30px_rgba(0,102,255,0.08)];
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-blue {
+    @apply bg-gradient-to-r from-[#0066FF] via-blue-600 to-cyan-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-600 bg-clip-text text-transparent;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; filter: blur(40px); }
+  50% { opacity: 0.8; filter: blur(60px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@layer components {
+  /* Sensitive values render masked until an explicit, audited reveal (spec §19.3). */
+  .masked-value {
+    @apply font-mono tracking-tight text-slate-700;
+  }
+}
+
+
+

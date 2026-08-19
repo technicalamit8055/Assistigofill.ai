@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+build
+coverage
+package-lock.json
+supabase/.temp
+apps/extension/dist
+docs/MASTER_BUILD_SPEC.md
+Assistigo_ai_Master_Build_Specification.md

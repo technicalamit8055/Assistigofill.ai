@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Assistigo — form filling for service centres",
+  "short_name": "Assistigo",
+  "version": "0.1.0",
+  "description": "Fill supported online forms from a saved customer profile. You review every field, and you press submit.",
+  "minimum_chrome_version": "116",
+
+  "permissions": ["activeTab", "storage", "scripting", "sidePanel"],
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_title": "Assistigo",
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+
+  "host_permissions": [],
+
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+
+  "externally_connectable": {
+    "matches": ["http://localhost:3000/*", "https://assistigo.ai/*", "https://*.assistigo.ai/*"]
+  }
+}

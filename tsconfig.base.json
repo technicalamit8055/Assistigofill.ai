@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "noEmit": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@assistigo/core": ["./packages/core/src/index.ts"],
+      "@assistigo/core/*": ["./packages/core/src/*"],
+      "@assistigo/ai": ["./packages/ai/src/index.ts"],
+      "@assistigo/ai/*": ["./packages/ai/src/*"],
+      "@assistigo/form-engine": ["./packages/form-engine/src/index.ts"],
+      "@assistigo/form-engine/*": ["./packages/form-engine/src/*"],
+      "@assistigo/document-tools": ["./packages/document-tools/src/index.ts"],
+      "@assistigo/document-tools/*": ["./packages/document-tools/src/*"],
+      "@assistigo/ui": ["./packages/ui/src/index.ts"],
+      "@assistigo/ui/*": ["./packages/ui/src/*"],
+      "@assistigo/database": ["./packages/database/src/index.ts"],
+      "@assistigo/database/*": ["./packages/database/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next", "coverage"]
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["chrome", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@assistigo/core": ["../../packages/core/src/index.ts"],
+      "@assistigo/form-engine": ["../../packages/form-engine/src/index.ts"],
+      "@assistigo/form-engine/types": ["../../packages/form-engine/src/types.ts"],
+      "@assistigo/form-engine/safety": ["../../packages/form-engine/src/safety.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "*.config.ts"]
+}

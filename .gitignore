@@ -1,0 +1,55 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# extension build output
+apps/extension/dist/
+apps/extension/*.zip
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# supabase
+.branches
+.temp
+supabase/.temp/
+supabase/.branches/
+
+# testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editors / os
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# local scratch — never commit real documents or PII
+/scratch/
+/private/
+*.local.json
+
+# real customer documents must never be committed
+/uploads/

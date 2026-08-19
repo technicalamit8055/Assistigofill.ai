@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo — recruitment application</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="demo-banner">
+        DEMO FORM — for testing Assistigo only. Not a real recruitment board. Nothing is
+        submitted, and no file you choose here is uploaded anywhere.
+      </p>
+
+      <h1>Recruitment application</h1>
+      <p class="muted">
+        Photo and signature uploads, plus a state → district dropdown that only populates after
+        the state is chosen.
+      </p>
+
+      <form id="recruitment-form" onsubmit="return false;">
+        <h2>Candidate details</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="candidateName">Candidate Name <span class="req">*</span></label>
+            <input type="text" id="candidateName" name="candidate_name" required />
+          </div>
+
+          <div class="field">
+            <label for="guardian">Father's / Husband's Name</label>
+            <input type="text" id="guardian" name="father_husband_name" />
+          </div>
+
+          <div class="field">
+            <label for="birthDate">Date of Birth</label>
+            <input type="text" id="birthDate" name="date_of_birth" placeholder="DD-MM-YYYY" />
+          </div>
+
+          <div class="field">
+            <label for="panNo">PAN Number</label>
+            <input type="text" id="panNo" name="pan_no" maxlength="10" />
+          </div>
+
+          <div class="field">
+            <label for="contactNo">Contact Number</label>
+            <input type="tel" id="contactNo" name="contact_no" maxlength="10" />
+          </div>
+
+          <div class="field">
+            <label for="emailId">Email Address</label>
+            <input type="email" id="emailId" name="email_address" />
+          </div>
+        </div>
+
+        <h2>Address</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="stateSelect">State</label>
+            <select id="stateSelect" name="state">
+              <option value="">-- Select State --</option>
+              <option value="BR">Bihar</option>
+              <option value="UP">Uttar Pradesh</option>
+              <option value="JH">Jharkhand</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="districtSelect">District</label>
+            <select id="districtSelect" name="district">
+              <option value="">-- Select State first --</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="blockInput">Block / Tehsil</label>
+            <input type="text" id="blockInput" name="block" />
+          </div>
+
+          <div class="field">
+            <label for="pinInput">PIN Code</label>
+            <input type="text" id="pinInput" name="pin_code" maxlength="6" />
+          </div>
+        </div>
+
+        <h2>Documents</h2>
+        <p class="muted" style="font-size: 13px">
+          Browsers do not allow an extension to set a file input. Assistigo suggests the prepared
+          file and you choose it — that is the intended behaviour, not a failure.
+        </p>
+        <div class="grid">
+          <div class="field">
+            <label for="photoUpload">Upload Photograph (JPG, 20–50 KB, 200×230 px)</label>
+            <input type="file" id="photoUpload" name="photo" accept="image/jpeg" />
+          </div>
+
+          <div class="field">
+            <label for="signUpload">Upload Signature (JPG, 10–20 KB, 140×60 px)</label>
+            <input type="file" id="signUpload" name="signature" accept="image/jpeg" />
+          </div>
+        </div>
+
+        <h2>Declaration</h2>
+        <label style="font-weight: 400">
+          <input type="checkbox" name="declaration" id="declaration" />
+          I declare that the information given above is true to the best of my knowledge.
+        </label>
+
+        <div class="actions">
+          <button type="submit">Final Submit</button>
+          <span class="submit-note">Assistigo never clicks this.</span>
+        </div>
+      </form>
+    </main>
+
+    <script>
+      /*
+       * Dependent dropdown. The delay is deliberate: it reproduces the async repopulation that
+       * real portals do, so the extension's bounded wait actually gets exercised.
+       */
+      const DISTRICTS = {
+        BR: ['Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur', 'Darbhanga'],
+        UP: ['Lucknow', 'Kanpur', 'Varanasi', 'Prayagraj', 'Gorakhpur'],
+        JH: ['Ranchi', 'Dhanbad', 'Jamshedpur', 'Bokaro'],
+      };
+
+      const stateSelect = document.getElementById('stateSelect');
+      const districtSelect = document.getElementById('districtSelect');
+
+      stateSelect.addEventListener('change', () => {
+        districtSelect.innerHTML = '<option value="">Loading…</option>';
+        const code = stateSelect.value;
+
+        setTimeout(() => {
+          const options = ['<option value="">-- Select District --</option>'];
+          for (const name of DISTRICTS[code] || []) {
+            options.push('<option value="' + name + '">' + name + '</option>');
+          }
+          districtSelect.innerHTML = options.join('');
+        }, 400);
+      });
+    </script>
+  </body>
+</html>

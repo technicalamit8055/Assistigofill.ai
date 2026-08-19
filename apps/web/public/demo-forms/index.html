@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Assistigo demo forms</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="demo-banner">
+        Practice forms for testing Assistigo. They are not connected to any portal, they submit
+        nothing anywhere, and no real service is behind them. Use demo customer data only.
+      </p>
+
+      <h1>Demo forms</h1>
+      <p class="muted">
+        Open one of these, then use the Assistigo extension to detect fields and fill them.
+      </p>
+
+      <ul class="list">
+        <li>
+          <a href="./certificate.html">Certificate application</a>
+          <span class="muted">Plain English labels. The simplest case.</span>
+        </li>
+        <li>
+          <a href="./scholarship.html">Scholarship application</a>
+          <span class="muted">
+            Hindi and English labels, a CAPTCHA box and an OTP box — both must be skipped.
+          </span>
+        </li>
+        <li>
+          <a href="./recruitment.html">Recruitment application</a>
+          <span class="muted">
+            Photo and signature uploads, and a state → district dependent dropdown.
+          </span>
+        </li>
+        <li>
+          <a href="./unsupported.html">Unsupported form</a>
+          <span class="muted">Deliberately odd labels, to test the low-confidence path.</span>
+        </li>
+      </ul>
+
+      <h2>What to check</h2>
+      <ul class="checks">
+        <li>The selected customer's name and mobile last four stay visible throughout.</li>
+        <li>Every field shows a confidence score, and low-confidence ones need confirmation.</li>
+        <li>The CAPTCHA and OTP boxes are reported as skipped, and stay empty.</li>
+        <li>Nothing is ever submitted — the submit button is never clicked.</li>
+        <li>Filled / skipped / needs-review counts appear before and after the fill.</li>
+      </ul>
+    </main>
+  </body>
+</html>

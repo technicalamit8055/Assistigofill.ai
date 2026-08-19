@@ -1,0 +1,48 @@
+{
+  "name": "assistigo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Assistigo.ai - India-first AI form-filling SaaS for CSCs, cyber cafes, VLEs and digital service centres",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @assistigo/web",
+    "dev:extension": "npm run dev --workspace @assistigo/extension",
+    "build": "npm run build --workspaces --if-present",
+    "build:web": "npm run build --workspace @assistigo/web",
+    "build:extension": "npm run build --workspace @assistigo/extension",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:rls": "vitest run --project rls",
+    "check:sql": "node scripts/check-sql.mjs",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:seed": "tsx scripts/seed-demo-data.ts",
+    "verify:env": "tsx scripts/verify-env.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "@types/node": "^22.7.4",
+    "eslint": "^9.12.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jsdom": "^25.0.1",
+    "pg-query-emscripten": "^5.1.0",
+    "prettier": "^3.3.3",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.8.0",
+    "vitest": "^3.2.7"
+  }
+}

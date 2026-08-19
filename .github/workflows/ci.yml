@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  static:
+    name: Typecheck, lint, format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - name: Parse-check migrations
+        run: npm run check:sql
+
+  test:
+    name: Unit and extension tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --project unit --project extension
+
+  database:
+    name: Migrations and RLS tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase
+        run: supabase start
+      - name: Apply migrations
+        run: supabase db reset --no-seed
+      - name: RLS tests
+        run: npx vitest run --project rls
+        env:
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+  build:
+    name: Build web and extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build:web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - run: npm run build:extension
+
+  safety:
+    name: Product safety rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Safety regression tests (no submit / captcha / otp / payment)
+        run: npx vitest run --project extension --project unit -t "safety"
+      - name: Guard against forbidden APIs in extension source
+        run: |
+          if grep -rnE "\.submit\(\)|requestSubmit\(|\beval\(|new Function\(" apps/extension/src --include='*.ts' --include='*.tsx'; then
+            echo "::error::Forbidden API found in extension source (spec 14.8 / 15.3)"
+            exit 1
+          fi

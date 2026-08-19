@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo — scholarship application (Hindi/English)</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="demo-banner">
+        DEMO FORM — for testing Assistigo only. Not a government service. Nothing is submitted.
+        The CAPTCHA and OTP boxes below are decorative and must be left empty by the extension.
+      </p>
+
+      <h1>छात्रवृत्ति आवेदन / Scholarship Application</h1>
+      <p class="muted">
+        Mixed Hindi and English labels, plus the CAPTCHA and OTP controls Assistigo must refuse
+        to touch.
+      </p>
+
+      <form id="scholarship-form" onsubmit="return false;">
+        <h2>व्यक्तिगत विवरण / Personal Details</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="naam">आवेदक का नाम <span class="req">*</span></label>
+            <input type="text" id="naam" name="aavedak_naam" required />
+          </div>
+
+          <div class="field">
+            <label for="pita">पिता का नाम <span class="req">*</span></label>
+            <input type="text" id="pita" name="pita_naam" required />
+          </div>
+
+          <div class="field">
+            <label for="mata">माता का नाम</label>
+            <input type="text" id="mata" name="mata_naam" />
+          </div>
+
+          <div class="field">
+            <label for="janm">जन्म तिथि <span class="req">*</span></label>
+            <input type="date" id="janm" name="janm_tithi" required />
+          </div>
+
+          <div class="field">
+            <label for="shreni">श्रेणी / Category</label>
+            <select id="shreni" name="shreni">
+              <option value="">-- चुनें --</option>
+              <option value="GEN">सामान्य / General</option>
+              <option value="OBC">ओबीसी / OBC</option>
+              <option value="SC">अनुसूचित जाति / SC</option>
+              <option value="ST">अनुसूचित जनजाति / ST</option>
+              <option value="EWS">ईडब्ल्यूएस / EWS</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="mobileNo">मोबाइल नंबर <span class="req">*</span></label>
+            <input type="tel" id="mobileNo" name="mobile_number" maxlength="10" required />
+          </div>
+        </div>
+
+        <fieldset style="margin-top: 16px">
+          <legend>लिंग / Gender</legend>
+          <div class="radio-row">
+            <label><input type="radio" name="ling" value="Male" /> पुरुष / Male</label>
+            <label><input type="radio" name="ling" value="Female" /> महिला / Female</label>
+            <label><input type="radio" name="ling" value="Other" /> अन्य / Other</label>
+          </div>
+        </fieldset>
+
+        <h2>शैक्षणिक विवरण / Education</h2>
+        <table>
+          <tr>
+            <td>दसवीं बोर्ड / 10th Board</td>
+            <td><input type="text" name="board_10" id="board_10" /></td>
+          </tr>
+          <tr>
+            <td>दसवीं रोल नंबर / 10th Roll Number</td>
+            <td><input type="text" name="roll_10" id="roll_10" /></td>
+          </tr>
+          <tr>
+            <td>दसवीं उत्तीर्ण वर्ष / 10th Passing Year</td>
+            <td><input type="text" name="year_10" id="year_10" maxlength="4" /></td>
+          </tr>
+          <tr>
+            <td>वार्षिक पारिवारिक आय / Annual Family Income</td>
+            <td><input type="text" name="annual_income" id="annual_income" /></td>
+          </tr>
+        </table>
+
+        <h2>सत्यापन / Verification</h2>
+        <p class="muted" style="font-size: 13px">
+          Assistigo must skip both fields below and tell the operator to fill them by hand.
+        </p>
+
+        <div class="grid">
+          <div class="field">
+            <label for="captchaInput">Enter the code shown in the image</label>
+            <div class="captcha-box">
+              <span class="captcha-image" aria-hidden="true">7K4M9</span>
+              <input type="text" id="captchaInput" name="captcha_code" maxlength="6" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="otpInput">Enter OTP sent to your mobile</label>
+            <input type="text" id="otpInput" name="otp" maxlength="6" inputmode="numeric" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit">आवेदन जमा करें / Submit Application</button>
+          <span class="submit-note">Assistigo never clicks this.</span>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

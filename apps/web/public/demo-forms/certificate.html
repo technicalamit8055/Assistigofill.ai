@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo — certificate application</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="demo-banner">
+        DEMO FORM — for testing Assistigo only. Not a government service. Nothing is submitted.
+      </p>
+
+      <h1>Residence certificate application</h1>
+      <p class="muted">Plain English labels, laid out the way most portals do it.</p>
+
+      <form id="certificate-form" onsubmit="return false;">
+        <h2>Applicant details</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="applicantName">Applicant's Name <span class="req">*</span></label>
+            <input type="text" id="applicantName" name="applicant_name" required />
+          </div>
+
+          <div class="field">
+            <label for="fatherName">Father's Name <span class="req">*</span></label>
+            <input type="text" id="fatherName" name="father_name" required />
+          </div>
+
+          <div class="field">
+            <label for="motherName">Mother's Name</label>
+            <input type="text" id="motherName" name="mother_name" />
+          </div>
+
+          <div class="field">
+            <label for="dob">Date of Birth <span class="req">*</span></label>
+            <input type="text" id="dob" name="dob" placeholder="DD/MM/YYYY" required />
+          </div>
+
+          <div class="field">
+            <label for="gender">Gender</label>
+            <select id="gender" name="gender">
+              <option value="">-- Select --</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Transgender">Transgender</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">-- Select --</option>
+              <option value="GEN">General</option>
+              <option value="OBC">OBC</option>
+              <option value="SC">SC</option>
+              <option value="ST">ST</option>
+              <option value="EWS">EWS</option>
+            </select>
+          </div>
+        </div>
+
+        <h2>Contact</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="mobile">Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="mobile" name="mobile" maxlength="10" required />
+          </div>
+
+          <div class="field">
+            <label for="email">Email ID</label>
+            <input type="email" id="email" name="email" />
+          </div>
+        </div>
+
+        <h2>Address</h2>
+        <table>
+          <tr>
+            <td>House Number</td>
+            <td><input type="text" name="house_no" id="house_no" /></td>
+          </tr>
+          <tr>
+            <td>Village / Town</td>
+            <td><input type="text" name="village" id="village" /></td>
+          </tr>
+          <tr>
+            <td>Post Office</td>
+            <td><input type="text" name="post_office" id="post_office" /></td>
+          </tr>
+          <tr>
+            <td>Police Station</td>
+            <td><input type="text" name="police_station" id="police_station" /></td>
+          </tr>
+          <tr>
+            <td>District</td>
+            <td><input type="text" name="district" id="district" /></td>
+          </tr>
+          <tr>
+            <td>State</td>
+            <td><input type="text" name="state" id="state" /></td>
+          </tr>
+          <tr>
+            <td>PIN Code</td>
+            <td><input type="text" name="pincode" id="pincode" maxlength="6" /></td>
+          </tr>
+        </table>
+
+        <div class="field full" style="margin-top: 14px">
+          <label for="fullAddress">Complete Address</label>
+          <textarea id="fullAddress" name="address" rows="3"></textarea>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Submit Application</button>
+          <span class="submit-note">
+            Assistigo never clicks this. You do, after checking the form.
+          </span>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>
