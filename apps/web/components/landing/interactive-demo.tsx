@@ -117,16 +117,16 @@ export function InteractiveDemo() {
           <div className="mt-10 rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden max-w-6xl mx-auto">
 
             {/* Simulated Browser Bar */}
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100/90 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-rose-400" />
-                <span className="h-3 w-3 rounded-full bg-amber-400" />
-                <span className="h-3 w-3 rounded-full bg-emerald-400" />
-                <div className="ml-4 flex items-center gap-2 rounded-lg bg-white px-3 py-1 text-xs text-slate-600 w-64 sm:w-96 truncate border border-slate-200 shadow-sm">
-                  <svg className="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-100/90 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="h-3 w-3 rounded-full bg-rose-400 shrink-0" />
+                <span className="h-3 w-3 rounded-full bg-amber-400 shrink-0" />
+                <span className="h-3 w-3 rounded-full bg-emerald-400 shrink-0" />
+                <div className="ml-2 sm:ml-4 flex min-w-0 flex-1 items-center gap-2 rounded-lg bg-white px-3 py-1 text-xs text-slate-600 sm:w-96 truncate border border-slate-200 shadow-sm">
+                  <svg className="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span>https://serviceonline.bihar.gov.in/rtps/application-form</span>
+                  <span className="truncate">https://serviceonline.bihar.gov.in/rtps/application-form</span>
                 </div>
               </div>
 
@@ -139,7 +139,7 @@ export function InteractiveDemo() {
                     setSelectedProfileId(e.target.value);
                     handleTriggerFill();
                   }}
-                  className="rounded-lg bg-white border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  className="w-full rounded-lg bg-white border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm sm:w-auto"
                 >
                   {PROFILES.map((p) => (
                     <option key={p.id} value={p.id} className="text-slate-900">
@@ -155,18 +155,18 @@ export function InteractiveDemo() {
 
               {/* Left Column: Simulated Web Portal Form (8 cols) */}
               <div className="lg:col-span-8 p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/50">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-6">
+                  <div className="flex items-center gap-3 min-w-0">
                     <img
                       src="/Rtps-bihar-Photoroom.png"
                       alt="RTPS Bihar Logo"
-                      className="h-16 sm:h-20 w-auto object-contain shrink-0"
+                      className="h-12 sm:h-16 lg:h-20 w-auto object-contain shrink-0"
                     />
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
                         LIVE FORM DETECTED
                       </span>
-                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
+                      <h3 className="text-sm sm:text-base lg:text-lg font-bold text-slate-900 mt-0.5">
                         RTPS Bihar &mdash; Certificate Service Portal
                       </h3>
                     </div>
@@ -174,7 +174,7 @@ export function InteractiveDemo() {
                   <button
                     onClick={handleTriggerFill}
                     disabled={isFilling}
-                    className="flex items-center gap-2 rounded-xl bg-[#0066FF] hover:bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/25 transition-all active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-xl bg-[#0066FF] hover:bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/25 transition-all active:scale-95 disabled:opacity-50 shrink-0"
                   >
                     <svg className="h-4 w-4 animate-spin-slow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -307,9 +307,9 @@ export function InteractiveDemo() {
                 </div>
 
                 {/* Status bar bottom */}
-                <div className="mt-6 flex items-center justify-between rounded-xl bg-blue-50 border border-blue-200 p-3">
+                <div className="mt-6 flex flex-col gap-2 rounded-xl bg-blue-50 border border-blue-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 shrink-0" />
                     <span className="text-xs font-bold text-blue-900">
                       {isFilled ? 'Form 100% Mapped & Filled in 1.2s' : 'Ready to Autofill'}
                     </span>
