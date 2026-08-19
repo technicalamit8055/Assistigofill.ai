@@ -119,6 +119,20 @@
     "duplicateHelp": "Check before creating a second record for the same person.",
     "createAnyway": "Create anyway",
     "openExisting": "Open existing customer",
+    "fatherName": "Father's / guardian's name",
+    "dateOfBirth": "Date of birth",
+    "gender": "Gender",
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "transgender": "Transgender",
+      "other": "Other"
+    },
+    "notes": "Notes",
+    "auditTrail": "Activity log",
+    "auditEmpty": "No activity recorded yet.",
+    "auditAction": "Action",
+    "confirmDelete": "Delete this customer? This can be reversed by a manager.",
     "sections": {
       "personal": "Personal",
       "family": "Family",
@@ -129,6 +143,15 @@
       "education": "Education",
       "certificates": "Certificates",
       "banking": "Banking"
+    }
+  },
+  "audit": {
+    "actions": {
+      "customer.created": "Customer created",
+      "customer.updated": "Customer updated",
+      "customer.deleted": "Customer deleted",
+      "customer.sensitive_revealed": "Sensitive field revealed",
+      "customer.exported": "Customer data exported"
     }
   },
   "settings": {

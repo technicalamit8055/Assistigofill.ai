@@ -119,6 +119,20 @@
     "duplicateHelp": "एक ही व्यक्ति का दूसरा रिकॉर्ड बनाने से पहले जांच लें।",
     "createAnyway": "फिर भी बनाएं",
     "openExisting": "मौजूदा ग्राहक खोलें",
+    "fatherName": "पिता / अभिभावक का नाम",
+    "dateOfBirth": "जन्म तिथि",
+    "gender": "लिंग",
+    "genderOptions": {
+      "male": "पुरुष",
+      "female": "महिला",
+      "transgender": "ट्रांसजेंडर",
+      "other": "अन्य"
+    },
+    "notes": "टिप्पणियाँ",
+    "auditTrail": "गतिविधि लॉग",
+    "auditEmpty": "अभी तक कोई गतिविधि दर्ज नहीं है।",
+    "auditAction": "कार्रवाई",
+    "confirmDelete": "इस ग्राहक को हटाएं? इसे प्रबंधक द्वारा वापस लाया जा सकता है।",
     "sections": {
       "personal": "व्यक्तिगत",
       "family": "परिवार",
@@ -129,6 +143,15 @@
       "education": "शिक्षा",
       "certificates": "प्रमाण पत्र",
       "banking": "बैंकिंग"
+    }
+  },
+  "audit": {
+    "actions": {
+      "customer.created": "ग्राहक जोड़ा गया",
+      "customer.updated": "ग्राहक अपडेट हुआ",
+      "customer.deleted": "ग्राहक हटाया गया",
+      "customer.sensitive_revealed": "संवेदनशील फ़ील्ड दिखाई गई",
+      "customer.exported": "ग्राहक डेटा निर्यात हुआ"
     }
   },
   "settings": {
