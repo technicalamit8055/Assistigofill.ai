@@ -117,6 +117,60 @@ export type CustomerFieldValueRow = Timestamps & {
   updated_by: string | null;
 };
 
+export type DocumentRow = Timestamps & {
+  id: string;
+  organization_id: string;
+  customer_id: string | null;
+  application_id: string | null;
+  original_filename: string;
+  storage_bucket: string;
+  storage_path: string;
+  mime_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf';
+  size_bytes: number;
+  sha256: string | null;
+  document_type: string;
+  status: 'uploaded' | 'processing' | 'extracted' | 'review_required' | 'verified' | 'failed' | 'deleted';
+  is_sensitive: boolean;
+  expires_at: string | null;
+  label: string | null;
+  uploaded_by: string | null;
+  deleted_at: string | null;
+};
+
+export type DocumentExtractionRow = Timestamps & {
+  id: string;
+  organization_id: string;
+  document_id: string;
+  provider: string;
+  provider_request_id: string | null;
+  document_type: string;
+  raw_text: string | null;
+  extracted_fields: Json;
+  warnings: Json;
+  confidence: number | null;
+  status: 'pending' | 'completed' | 'review_required' | 'failed' | 'accepted' | 'rejected';
+  error_code: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+};
+
+export type JobRow = Timestamps & {
+  id: string;
+  organization_id: string | null;
+  type: string;
+  payload: Json;
+  status: 'pending' | 'running' | 'retry' | 'completed' | 'failed' | 'cancelled';
+  attempts: number;
+  max_attempts: number;
+  run_after: string;
+  locked_until: string | null;
+  locked_by: string | null;
+  last_error: string | null;
+  idempotency_key: string | null;
+  created_by: string | null;
+  completed_at: string | null;
+};
+
 export type AuditLogRow = {
   id: string;
   organization_id: string | null;

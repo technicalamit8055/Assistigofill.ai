@@ -6,6 +6,7 @@ import { useState, type FormEvent } from 'react';
 import { Alert, Badge, Button, Card, Select, TextField } from '@assistigo/ui';
 import { DUPLICATE_REASON_LABELS, type DuplicateMatch } from '@assistigo/core';
 import { useI18n, useTranslations } from '@/lib/i18n/client';
+import { PastePrefill } from './paste-prefill';
 
 type CreateResponse =
   | { created: true; customer: { id: string; customer_code: string; full_name: string } }
@@ -20,6 +21,14 @@ export function NewCustomerForm() {
   const [error, setError] = useState<string | null>(null);
   const [duplicates, setDuplicates] = useState<DuplicateMatch[] | null>(null);
   const [pendingFormData, setPendingFormData] = useState<Record<string, string> | null>(null);
+  const [prefill, setPrefill] = useState<Record<string, string>>({});
+  // Bumped on each prefill so the uncontrolled inputs remount and pick up their new defaults.
+  const [formKey, setFormKey] = useState(0);
+
+  function applyPrefill(values: Record<string, string>) {
+    setPrefill(values);
+    setFormKey((current) => current + 1);
+  }
 
   async function submit(payload: Record<string, string>, force: boolean) {
     setPending(true);
@@ -121,22 +130,52 @@ export function NewCustomerForm() {
 
   return (
     <Card>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <TextField label={t('customers.name')} name="fullName" required maxLength={160} autoFocus />
+      <PastePrefill onPrefill={applyPrefill} />
+
+      <form key={formKey} onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <TextField
+          label={t('customers.name')}
+          name="fullName"
+          required
+          maxLength={160}
+          autoFocus
+          defaultValue={prefill.fullName ?? ''}
+        />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TextField label={t('customers.mobile')} name="mobile" type="tel" maxLength={16} />
-          <TextField label={t('customers.district')} name="district" maxLength={120} />
+          <TextField
+            label={t('customers.mobile')}
+            name="mobile"
+            type="tel"
+            maxLength={16}
+            defaultValue={prefill.mobile ?? ''}
+          />
+          <TextField
+            label={t('customers.district')}
+            name="district"
+            maxLength={120}
+            defaultValue={prefill.district ?? ''}
+          />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TextField label={t('customers.fatherName')} name="fatherName" maxLength={160} />
-          <TextField label={t('customers.dateOfBirth')} name="dateOfBirth" type="date" />
+          <TextField
+            label={t('customers.fatherName')}
+            name="fatherName"
+            maxLength={160}
+            defaultValue={prefill.fatherName ?? ''}
+          />
+          <TextField
+            label={t('customers.dateOfBirth')}
+            name="dateOfBirth"
+            type="date"
+            defaultValue={prefill.dateOfBirth ?? ''}
+          />
         </div>
 
         <div className="space-y-1.5">
           <label htmlFor="gender" className="text-sm font-medium text-slate-800">
             {t('customers.gender')}
           </label>
-          <Select id="gender" name="gender" defaultValue="">
+          <Select id="gender" name="gender" defaultValue={prefill.gender ?? ''}>
             <option value="">{t('common.optional')}</option>
             <option value="male">{t('customers.genderOptions.male')}</option>
             <option value="female">{t('customers.genderOptions.female')}</option>

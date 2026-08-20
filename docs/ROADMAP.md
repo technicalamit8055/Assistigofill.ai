@@ -39,32 +39,79 @@ Done:
 - [x] `/api/me`, `/api/organizations/current`
 - [x] Request context that resolves cookie sessions and extension bearer tokens identically
 
+Done (added since):
+
+- [x] `packages/database/seed` — demo organization, four roles, ~30 fake customers, wired to
+      `npm run db:seed` via `scripts/seed-demo-data.ts`. Document fixtures deliberately deferred
+      to Phase 3: a `documents` row without real uploaded bytes would 404 in the CRM UI.
+- [x] `packages/database/rls-tests` — cross-org denial, viewer write denial, billing_admin
+      document/customer_field_values denial, audit immutability, anonymous access. Written and
+      typechecked; not yet run against a live Supabase (blocked below).
+
 Remaining:
 
 - [ ] Apply the migrations against a live Supabase (blocked: Docker not installed on this machine)
+      — this also blocks actually *running* `npm run db:seed` and `npm run test:rls` for the
+      first time, not just writing them.
 - [ ] `npm run db:types` and wire the generated `Database` type into the Supabase clients
-- [ ] `packages/database/seed` — demo organization, four roles, ~30 fake customers
-- [ ] `packages/database/rls-tests` — cross-org denial, viewer write denial, billing_admin
-      document denial, audit immutability
 - [ ] Password reset completion page (`/reset-password`)
 - [ ] Legal pages, pricing page, demo request page
 
 Acceptance: user signs up and creates an org · owner invites an operator · operator cannot reach
 billing settings · cross-org access blocked by test.
 
-## Phase 2 — Customer CRM ☐
+## Phase 2 — Customer CRM ☑
 
-Customer list + search UI (the `search_customers` RPC and the schema already exist), add-customer
-form, profile tabs, field-level provenance UI, duplicate warning wired to `findDuplicates`,
-sensitive-value reveal flow, audit logs, fake seed customers.
+- [x] Customer list, search box wired to the `search_customers` RPC
+- [x] Add-customer form, minimal fields, duplicate warning wired to `findDuplicates`
+      (surfaced, never blocking — `?force=1` records the operator's decision)
+- [x] Customer profile rendered from the field registry, section by section
+- [x] Sensitive-value reveal flow via `POST /api/customers/:id/reveal`, one field per call, audited
+- [x] Audit trail on the profile
+- [x] `/api/customers` list/create, `/api/customers/:id` read/update/delete
 
 Acceptance: customer created in under 30 s · search by name/mobile/location · Indian address
 fields · sensitive fields masked · changes audited.
 
-## Phase 3 — Documents and OCR ☐
+## Phase 3 — Documents and OCR ◐
 
-Private storage upload flow, job model, `OcrProvider` abstraction, mock provider, classification,
-extraction review UI, profile update from accepted extraction, fixtures.
+Done:
+
+- [x] `packages/ai` — `OcrProvider` abstraction, mock provider, document classification,
+      rules-based field extraction with en/hi/Hinglish labels and negative keywords, confidence
+      banding and review rules, fake fixtures with golden tests (53 unit tests)
+- [x] Aadhaar safety layer: extraction emits **only** `customer.aadhaar_last4`, and identifiers
+      are masked out of field values, source snippets and retained raw text before anything is
+      persisted (15 dedicated regression tests)
+- [x] Upload flow — `POST /api/documents/upload-intent` reserves a row and a one-time signed
+      upload URL; bytes go browser → storage directly
+- [x] `POST /api/documents/:id/process` — magic-byte sniff against the declared MIME type
+      before anything is processed; a file that lied is deleted and marked failed
+- [x] Job model: `enqueueJob`, the `ocr.extract` handler, the worker (`claim_jobs` /
+      `complete_job`), and `POST /api/jobs/run` gated on `JOB_RUNNER_SECRET` (fails closed)
+- [x] `GET /api/documents/:id/extraction`, `POST /api/documents/:id/review`,
+      `POST /api/documents/:id/signed-url` (≤300 s, audited), `DELETE /api/documents/:id`
+- [x] Review UI — per-field confidence, the reason review is required, the source snippet, and
+      accept/edit/reject. Accepting writes to `customers` **and** `customer_field_values`
+      (`operator_verified`) with provenance; rejecting records the rejection and never fills.
+- [x] Documents list, upload page, document detail, and a documents section on the customer profile
+- [x] Migration 0013 — one extraction per document (job idempotency) + `storage_used_bytes`,
+      which also wires up the storage entitlement that Phase 1 stubbed at zero
+- [x] `en` + `hi` strings for the whole surface
+- [x] Paste-text import — `packages/ai/src/text.ts` runs the same dictionary, normalisation,
+      confidence banding and Aadhaar gate over text an operator pastes, with no OCR and no
+      classification. `POST /api/customers/parse-text` proposes and stores nothing;
+      `POST /api/customers/:id/values` is the human gate and re-validates every value.
+      Paste panel on the customer profile, prefill on the new-customer form, 34 unit tests.
+
+Remaining:
+
+- [ ] Import-customer-from-document (§9.3): review currently requires the document to be
+      attached to an existing customer and refuses otherwise. Needs its own endpoint.
+- [ ] Schedule `POST /api/jobs/run` (Vercel Cron or equivalent) and set `JOB_RUNNER_SECRET`
+- [ ] Real OCR providers — `tesseract` and `anthropic` are declared and fail loudly rather than
+      silently falling back to the mock
+- [ ] Document fixtures in the seed (needs a live Supabase to upload real bytes)
 
 ## Phase 4 — Chrome extension (basic) ◐
 

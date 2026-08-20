@@ -13,32 +13,44 @@ export async function loadEntitlementContext(context: RequestContext): Promise<E
   periodStart.setUTCDate(1);
   periodStart.setUTCHours(0, 0, 0, 0);
 
-  const [usageResult, subscriptionResult, seatsResult, customersResult] = await Promise.all([
-    context.supabase.rpc('usage_since', {
-      org: context.organization.id,
-      since: periodStart.toISOString(),
-    }),
-    context.supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('organization_id', context.organization.id)
-      .in('status', ['active', 'trialing', 'past_due'])
-      .maybeSingle(),
-    context.supabase
-      .from('organization_members')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', context.organization.id)
-      .eq('status', 'active'),
-    context.supabase
-      .from('customers')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', context.organization.id)
-      .is('deleted_at', null),
-  ]);
+  const [usageResult, subscriptionResult, seatsResult, customersResult, storageResult] =
+    await Promise.all([
+      context.supabase.rpc('usage_since', {
+        org: context.organization.id,
+        since: periodStart.toISOString(),
+      }),
+      context.supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('organization_id', context.organization.id)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .maybeSingle(),
+      context.supabase
+        .from('organization_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', context.organization.id)
+        .eq('status', 'active'),
+      context.supabase
+        .from('customers')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', context.organization.id)
+        .is('deleted_at', null),
+      context.supabase.rpc('storage_used_bytes', { org: context.organization.id }),
+    ]);
 
   const usage: Partial<Record<UsageEventType, number>> = {};
   for (const row of (usageResult.data ?? []) as { event_type: UsageEventType; total: number }[]) {
     usage[row.event_type] = Number(row.total);
+  }
+
+  // A failed usage or storage read would otherwise report zero, which silently switches the
+  // limit off. Log it loudly: an entitlement that stops applying is a billing bug, and a silent
+  // one is a billing bug nobody finds.
+  for (const [name, failed] of [
+    ['usage_since', usageResult.error],
+    ['storage_used_bytes', storageResult.error],
+  ] as const) {
+    if (failed) logger.error('billing.entitlement_read_failed', { rpc: name, dbError: failed.message });
   }
 
   return {
@@ -48,8 +60,8 @@ export async function loadEntitlementContext(context: RequestContext): Promise<E
     usage,
     seatsInUse: seatsResult.count ?? 0,
     customerCount: customersResult.count ?? 0,
-    // Storage accounting arrives with Phase 3; until documents exist there is nothing to count.
-    storageUsedMb: 0,
+    // Rounded up: a plan limit is a ceiling, so a part-used megabyte is a used megabyte.
+    storageUsedMb: Math.ceil(Number(storageResult.data ?? 0) / (1024 * 1024)),
   };
 }
 

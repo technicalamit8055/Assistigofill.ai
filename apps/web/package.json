@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@assistigo/ai": "*",
     "@assistigo/core": "*",
     "@assistigo/ui": "*",
     "@supabase/ssr": "^0.5.2",

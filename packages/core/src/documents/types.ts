@@ -21,6 +21,16 @@ export const DOCUMENT_TYPES = [
 ] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
+/**
+ * Narrows a value read back from the database or an API payload.
+ *
+ * The `documents.document_type` column has a check constraint, but the row types in the app are
+ * hand-written, so this is what turns a `string` into a `DocumentType` without a cast.
+ */
+export function isDocumentType(value: unknown): value is DocumentType {
+  return typeof value === 'string' && (DOCUMENT_TYPES as readonly string[]).includes(value);
+}
+
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, { en: string; hi: string }> = {
   aadhaar_like: { en: 'Aadhaar-like ID', hi: 'आधार जैसा पहचान पत्र' },
   pan: { en: 'PAN card', hi: 'पैन कार्ड' },

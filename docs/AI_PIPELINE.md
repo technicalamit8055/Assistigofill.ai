@@ -121,8 +121,99 @@ traceability but never surfaces it for autofill.
 
 ## 8. Fixtures and golden tests (§23.1)
 
-`packages/ai/src/fixtures/` holds generated fake documents and their expected extraction output.
+`packages/ai/src/fixtures.ts` holds the fake documents and their expected extraction output.
 Every fixture is stamped **DEMO ONLY — NOT A VALID DOCUMENT** and uses the reserved fake ranges
-from `docs/DATABASE.md` §7. Golden tests assert extracted keys, values and confidence bands.
+from `docs/DATABASE.md` §7. Golden tests in `pipeline.test.ts` assert classification, extracted
+keys, values and review status.
+
+The Aadhaar-like fixture deliberately **fails** the Verhoeff checksum. It is Aadhaar-shaped, so
+it exercises the extractor and the masking path, but it can never collide with a real allocated
+number — which a checksum-valid twelve-digit number could.
 
 No real document is ever committed, in any form, including cropped or redacted.
+
+## 9. Where the Aadhaar rule is enforced
+
+`packages/ai/src/safety.ts` is the single gate. Every extracted field, every source snippet and
+the retained raw text pass through it before anything is persisted:
+
+- any twelve-digit run is masked to `XXXX XXXX 1234` — deliberately broader than the Verhoeff
+  check, because a misread Aadhaar is still an Aadhaar we must not store,
+- `customer.aadhaar_last4` is reduced to four digits whatever the extractor produced,
+- a field keyed to a full number (`customer.aadhaar`, `customer.uid`, …) is dropped outright.
+
+`safety.test.ts` is a regression suite for a product rule, not an implementation detail
+(docs/DEVELOPMENT_RULES.md §1 rule 5). Do not weaken it.
+
+## 10. Running the pipeline
+
+Extraction runs as a background job, not inside the upload request:
+
+```text
+POST /api/documents/upload-intent   → row reserved, one-time signed upload URL returned
+PUT  <signed upload url>            → bytes go browser → storage, never through a route handler
+POST /api/documents/:id/process     → magic bytes sniffed server-side, then `ocr.extract` queued
+POST /api/jobs/run                  → worker claims the job and runs this pipeline
+GET  /api/documents/:id/extraction  → the review payload
+POST /api/documents/:id/review      → the human gate; the only path into a customer profile
+```
+
+`/api/jobs/run` uses the service-role client, so it is gated on `JOB_RUNNER_SECRET` and **fails
+closed**: with the secret unset it refuses every request rather than running unauthenticated
+work. Point a scheduler at it.
+
+---
+
+## 11. Pasted text
+
+An operator often already has a customer's details as text — copied out of a portal, an email, a
+spreadsheet or a message. Retyping it is the slow step the product exists to remove, so pasted
+text gets the same treatment a document gets, minus the two steps that only apply to a scan:
+
+```text
+paste
+  → line splitting            (packages/ai/src/text.ts)
+  → field extraction          (the same LABEL_RULES dictionary)
+  → validation + normalisation
+  → confidence scoring
+  → human review              ← nothing reaches the profile before this
+  → customer profile update
+  → audit log
+```
+
+There is no OCR and no classification. The operator chose the text, so there is no scan quality
+to discount — block confidence is 1.0 and the score reflects label quality alone — and there is
+no document class to guess, so the **whole** dictionary is in scope
+(`ALL_EXTRACTABLE_FIELD_KEYS`) rather than one class's fields. Restricting pasted text to
+`FIELDS_BY_DOCUMENT_TYPE.generic` would silently drop fields the operator deliberately typed.
+
+The splitter handles the shapes real pastes arrive in:
+
+| Shape                                       | Handling                                                          |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| `Label: Value` per line                     | as-is                                                             |
+| `Label = Value`                             | `=` accepted alongside `:`, `  `, ` - `                          |
+| `A: 1, B: 2, C: 3` on one line              | split at a separator **only** when a new `label:` follows         |
+| `Address: H.No 12, Rampur, Ghazipur`        | not split — the lookahead needs a label, so the address survives   |
+| `Father's Name` / `Ram Kumar` on two lines | paired, but only if line 1 is a known label and line 2 is not      |
+
+Two things are deliberately different from the document path:
+
+1. **Nothing is persisted at parse time.** A document keeps its raw text until review because
+   the reviewer needs to check the extractor against the page. Pasted text is already in front
+   of the operator, so a second copy would be retention with no purpose (§7). There is no row,
+   no file and no `document_extractions` record; the text lives in the request and the browser
+   tab only.
+2. **The write route re-validates every value.** Because nothing was stored, the accepted values
+   arrive from the client. `POST /api/customers/:id/values` therefore checks each key against
+   the field registry and runs every value through `sanitizeExtractedFields` (§9) before
+   writing, so a full Aadhaar cannot be smuggled in under a permitted key.
+
+```text
+POST /api/customers/parse-text     → proposed fields; stores nothing
+POST /api/customers/:id/values     → the human gate; the only path into a customer profile
+```
+
+Accepting writes to `customers` **and** `customer_field_values` with status
+`operator_verified` and `source_document_id = null`, exactly as document review does — which
+is what makes the values available to the form engine for autofill (§14).

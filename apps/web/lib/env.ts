@@ -22,6 +22,12 @@ const serverSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   BILLING_PROVIDER: z.enum(['mock', 'razorpay', 'stripe']).default('mock'),
   EXTENSION_ALLOWED_IDS: z.string().optional(),
+  /**
+   * Shared secret for `POST /api/jobs/run`. That route runs with the service-role client, so
+   * it fails closed: unset means the endpoint refuses every request rather than running
+   * unauthenticated work.
+   */
+  JOB_RUNNER_SECRET: z.string().min(16).optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicSchema>;

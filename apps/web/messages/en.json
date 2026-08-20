@@ -55,7 +55,44 @@
     "passwordHint": "At least 10 characters, including a letter and a number.",
     "passwordMismatch": "The two passwords do not match.",
     "invalidCredentials": "Email or password is incorrect.",
-    "checkEmail": "Check your email to confirm your account."
+    "checkEmail": "Check your email to confirm your account.",
+    "signInSubtitle": "Welcome back. Sign in to reach your customers and saved forms.",
+    "signUpSubtitle": "Set up your centre in about a minute. No card needed.",
+    "resetSubtitle": "Enter the email you signed up with and we will send a reset link.",
+    "backToSite": "Back to site",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "rememberMe": "Keep me signed in",
+    "orContinue": "or",
+    "secureNote": "Protected by encryption in transit and at rest.",
+    "strength": {
+      "length": "10+ characters",
+      "letter": "A letter",
+      "number": "A number",
+      "variety": "A symbol",
+      "tooShort": "Too short",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "brand": {
+      "badge": "AI form autofill for Indian portals",
+      "headlineLead": "Save a customer once, then fill any form in",
+      "headlineAccent": "one click",
+      "subtitle": "Assistigo reads Indian documents, keeps every profile in one place, and fills supported portals after you review each field.",
+      "pointProfiles": "One customer profile reused across every form",
+      "pointExtract": "Details extracted from photos and PDFs",
+      "pointReview": "Nothing is submitted without your review",
+      "statForms": "Forms filled",
+      "statAccuracy": "Field accuracy",
+      "statClicks": "Per autofill",
+      "privacyNote": "Aadhaar numbers are never stored in full."
+    },
+    "consentPrefix": "I accept the",
+    "consentTerms": "Terms of Service",
+    "consentAnd": "and the",
+    "consentPrivacy": "Privacy Policy",
+    "consentSuffix": ""
   },
   "onboarding": {
     "title": "Set up your centre",
@@ -143,6 +180,34 @@
       "education": "Education",
       "certificates": "Certificates",
       "banking": "Banking"
+    },
+    "paste": {
+      "title": "Add customer details",
+      "help": "Paste a customer’s details as text — from a portal, an email, a spreadsheet or a message. Assistigo reads it into profile fields. Nothing is saved until you review it.",
+      "placeholder": "Name: Amit Kumar\nFather’s Name: Ram Kumar\nDate of Birth: 14/08/1996\nMobile: 9900012345\nDistrict: Ghazipur",
+      "privacyNote": "The pasted text is read and discarded — it is not stored. Aadhaar numbers are removed automatically; only the last four digits are kept.",
+      "parse": "Read details",
+      "source": "Read from",
+      "readLines": "Found {fields} fields in {lines} lines. Check each one before saving.",
+      "noFields": "No profile fields could be read from this text. Try one detail per line, like “Mobile: 9900012345”.",
+      "warningsTitle": "Notes on this text",
+      "startOver": "Paste different text",
+      "saved": "Saved {count} fields to the profile.",
+      "prefill": "Paste details instead",
+      "prefillHelp": "Paste the customer’s details and Assistigo will fill this form. Check every value before saving.",
+      "prefilled": "Filled {count} fields below.",
+      "prefillExtra": "{count} more details were found — paste the same text on the profile after saving to add them.",
+      "tabPaste": "Paste text",
+      "uploadIntro": "Upload an ID, certificate or marksheet. Assistigo reads it and proposes profile fields the same way pasted text does.",
+      "uploadedTitle": "Document uploaded",
+      "uploadedHelp": "Assistigo is reading it now. It will appear in Documents below — review and save the details from there once reading finishes.",
+      "warnings": {
+        "noText": "There was nothing to read in that text.",
+        "noFieldsFound": "No profile fields could be read from this text.",
+        "noNameFound": "No name could be read from this text.",
+        "aadhaarRemoved": "An Aadhaar number was found and removed. Only the last four digits can be stored.",
+        "textTruncated": "The text was very long, so only the first part was read."
+      }
     }
   },
   "audit": {
@@ -222,7 +287,11 @@
     "email_invalid": "Enter a valid email address.",
     "date_invalid": "Enter a valid date.",
     "year_invalid": "Enter a 4-digit year.",
-    "last4_invalid": "Enter exactly four digits."
+    "last4_invalid": "Enter exactly four digits.",
+    "unsupported_file_type": "Upload a JPG, PNG, WEBP or PDF file.",
+    "file_too_large": "That file is too large.",
+    "value_required": "Enter a value.",
+    "text_too_long": "This text is too long to read."
   },
   "errors": {
     "unauthenticated": "Please sign in to continue.",
@@ -234,11 +303,96 @@
     "provider_unavailable": "A service Assistigo depends on is unavailable. Please try again.",
     "internal": "Something went wrong at our end.",
     "traceId": "Reference: {traceId}",
-    "noOrganization": "You are not a member of any workspace yet."
+    "noOrganization": "You are not a member of any workspace yet.",
+    "file_type_mismatch": "That file is not the type it claims to be, so it was not accepted.",
+    "upload_incomplete": "The upload did not finish. Please try again.",
+    "no_extraction": "This document has not been read yet.",
+    "extraction_already_reviewed": "This extraction has already been reviewed.",
+    "document_has_no_customer": "Attach this document to a customer before saving the details.",
+    "unknown_field": "That field is not part of a customer profile.",
+    "ocr_provider_not_configured": "The document reader is not configured. Contact support.",
+    "ocr_provider_unknown": "The configured document reader is not recognised.",
+    "encryption_unavailable": "Secure storage is not configured, so that value could not be saved. Contact support."
   },
   "privacy": {
     "sensitiveNotice": "Sensitive value. Revealing it is recorded in the audit log.",
     "aadhaarNotice": "Assistigo stores only the last four digits of an Aadhaar number.",
     "demoDataNotice": "This workspace contains demo data. Do not enter real customer details."
+  },
+  "documents": {
+    "title": "Documents",
+    "subtitle": "Uploaded documents, extraction status and review.",
+    "upload": "Upload document",
+    "uploadTitle": "Upload a document",
+    "uploadSubtitle": "Assistigo reads the document and proposes profile fields. Nothing is saved until you review it.",
+    "emptyTitle": "No documents yet",
+    "emptyDescription": "Upload an ID, certificate or marksheet to pull details into a customer profile.",
+    "file": "File",
+    "fileHint": "JPG, PNG, WEBP or PDF, up to {size}.",
+    "type": "Document type",
+    "typeHint": "Optional. Assistigo detects the type and will correct this if needed.",
+    "detectType": "Detect automatically",
+    "size": "Size",
+    "customer": "Customer",
+    "customerHint": "Attach the document to a customer so extracted details can be saved to their profile.",
+    "noCustomer": "Not attached to a customer",
+    "details": "Details",
+    "provider": "Read by",
+    "view": "View",
+    "reprocess": "Read again",
+    "deleteConfirm": "Delete this document? The stored file is removed permanently.",
+    "processingTitle": "Reading the document",
+    "processingHelp": "This usually takes a few seconds. Refresh the page to see the result.",
+    "failedTitle": "Could not read this document",
+    "failedHelp": "Try uploading a clearer scan, or read it again.",
+    "statuses": {
+      "uploaded": "Uploaded",
+      "processing": "Reading",
+      "extracted": "Read",
+      "review_required": "Needs review",
+      "verified": "Verified",
+      "failed": "Failed",
+      "deleted": "Deleted",
+      "unknown": "Unclassified"
+    },
+    "errors": {
+      "uploadFailed": "The file could not be uploaded. Please try again."
+    },
+    "warnings": {
+      "title": "Notes on this extraction",
+      "valueNotUnderstood": "A value was found but could not be understood, so it was skipped.",
+      "noFieldsFound": "No details could be read from this document.",
+      "noNameFound": "No name could be read from this document.",
+      "unknownDocumentType": "The document type could not be identified. You can set it yourself.",
+      "aiProcessingNotEnabled": "AI processing is off for this workspace, so a basic reader was used instead."
+    },
+    "review": {
+      "title": "Review extracted details",
+      "help": "Check each value against the document. Accept, edit or reject — nothing is saved to the profile until you do.",
+      "noFields": "Nothing was extracted from this document.",
+      "source": "Read from",
+      "confidence": "Confidence",
+      "accept": "Accept",
+      "reject": "Reject",
+      "undo": "Undo",
+      "save": "Save to profile",
+      "pendingCount": "{accepted} of {total} fields ready to save",
+      "noCustomerTitle": "Not attached to a customer",
+      "noCustomerHelp": "Attach this document to a customer before saving, so the details have somewhere to go.",
+      "doneTitle": "Already reviewed",
+      "doneHelp": "This extraction was reviewed on {date}.",
+      "reasons": {
+        "low_confidence": "Low confidence",
+        "medium_confidence": "Check this",
+        "high_risk_field": "Always checked",
+        "format_invalid": "Unexpected format",
+        "ambiguous_match": "Could match two fields"
+      }
+    }
+  },
+  "legal": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "security": "Security"
   }
 }

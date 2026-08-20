@@ -25,6 +25,14 @@
     line-height: 1.65;
   }
 
+  /*
+   * Display headings need the same allowance as body text: at 4xl/5xl the matras on words like
+   * सहेजें collide with the line above unless the leading is opened up (spec §20.3).
+   */
+  html[lang='hi'] :where(h1, h2) {
+    line-height: 1.45;
+  }
+
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     @apply outline outline-2 outline-offset-2 outline-blue-600;
   }

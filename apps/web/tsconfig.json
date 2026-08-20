@@ -13,6 +13,8 @@
       "@/*": ["./*"],
       "@assistigo/core": ["../../packages/core/src/index.ts"],
       "@assistigo/core/*": ["../../packages/core/src/*"],
+      "@assistigo/ai": ["../../packages/ai/src/index.ts"],
+      "@assistigo/ai/*": ["../../packages/ai/src/*"],
       "@assistigo/ui": ["../../packages/ui/src/index.ts"]
     }
   },

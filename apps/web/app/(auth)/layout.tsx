@@ -1,37 +1,76 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import { BrandPanel } from '@/components/auth/brand-panel';
+import { LocaleSwitcher } from '@/components/app-shell/locale-switcher';
 import { getTranslations } from '@/lib/i18n/server';
+
+const LEGAL_LINKS = [
+  { href: '/legal/privacy', key: 'legal.privacy' },
+  { href: '/legal/terms', key: 'legal.terms' },
+  { href: '/legal/security', key: 'legal.security' },
+] as const;
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t } = await getTranslations();
 
   return (
-    <div className="flex min-h-dvh flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-base font-semibold text-slate-900">
-            {t('app.name')}
-          </Link>
-          <p className="hidden text-sm text-slate-500 sm:block">{t('app.tagline')}</p>
-        </div>
-      </header>
+    <div className="flex min-h-dvh bg-white">
+      <BrandPanel />
 
-      <main className="flex flex-1 items-start justify-center px-4 py-10 sm:py-16">
-        <div className="w-full max-w-md">{children}</div>
-      </main>
+      {/* Form half. Owns the full width below `lg`. */}
+      <div className="relative flex flex-1 flex-col">
+        {/* Light aura so the phone/tablet view is not a bare white sheet. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-96 bg-gradient-to-b from-blue-50 via-slate-50/60 to-white"
+        />
 
-      <footer className="border-t border-slate-200 bg-white px-4 py-4">
-        <div className="mx-auto flex max-w-5xl flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-          <Link href="/legal/privacy" className="hover:text-slate-700">
-            Privacy Policy
+        <header className="flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
+          <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label={t('app.name')}>
+            <Image
+              src="/assistfill-logo.png"
+              alt={t('app.name')}
+              width={360}
+              height={120}
+              priority
+              className="h-10 w-auto object-contain object-left"
+            />
           </Link>
-          <Link href="/legal/terms" className="hover:text-slate-700">
-            Terms of Service
+
+          <Link
+            href="/"
+            className="hidden items-center gap-1.5 text-sm font-semibold text-slate-500 transition-colors hover:text-[#0066FF] lg:inline-flex"
+          >
+            <svg
+              aria-hidden
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12l7.5-7.5M3 12h18" />
+            </svg>
+            {t('auth.backToSite')}
           </Link>
-          <Link href="/legal/security" className="hover:text-slate-700">
-            Security
-          </Link>
-        </div>
-      </footer>
+
+          <LocaleSwitcher />
+        </header>
+
+        <main className="flex flex-1 items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
+          <div className="w-full max-w-md">{children}</div>
+        </main>
+
+        <footer className="px-5 pb-8 sm:px-8">
+          <div className="mx-auto flex max-w-md flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-slate-200 pt-5 text-xs text-slate-500">
+            {LEGAL_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className="transition-colors hover:text-slate-800">
+                {t(link.key)}
+              </Link>
+            ))}
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

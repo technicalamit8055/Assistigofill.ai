@@ -15,6 +15,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { customerValuesFromRow } from '@/lib/customers/values';
 import type { AuditLogRow, CustomerRow } from '@/lib/supabase/database.types';
 import { CustomerProfileField } from './customer-profile-field';
+import { CustomerDocuments } from './customer-documents';
+import { AddProfileInfo } from './add-profile-info';
 import { DeleteCustomerButton } from './delete-customer-button';
 
 export const metadata = { title: 'Customer profile' };
@@ -65,6 +67,7 @@ export default async function CustomerProfilePage({ params }: { params: Promise<
   const canReveal = session.permissions.has('customer.reveal_sensitive');
   const canUpdate = session.permissions.has('customer.update');
   const canDelete = session.permissions.has('customer.delete');
+  const canUploadDocument = session.permissions.has('document.upload');
   const auditLogs = (auditRows ?? []) as AuditLogRow[];
 
   return (
@@ -119,6 +122,14 @@ export default async function CustomerProfilePage({ params }: { params: Promise<
         <Card title={t('customers.notes')}>
           <p className="whitespace-pre-wrap text-sm text-slate-700">{row.notes}</p>
         </Card>
+      ) : null}
+
+      {canUpdate || canUploadDocument ? (
+        <AddProfileInfo customerId={row.id} canPaste={canUpdate} canUpload={canUploadDocument} />
+      ) : null}
+
+      {session.permissions.has('document.view') ? (
+        <CustomerDocuments customerId={row.id} organizationId={session.organization.id} />
       ) : null}
 
       {session.permissions.has('audit.view') ? (

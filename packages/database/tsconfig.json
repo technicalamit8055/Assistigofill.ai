@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // No rootDir: this package imports @assistigo/core source directly, and with `noEmit`
+    // there is no output layout for rootDir to constrain.
+    "paths": {
+      "@assistigo/core": ["../core/src/index.ts"],
+      "@assistigo/core/*": ["../core/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "rls-tests/**/*.ts"]
+}
