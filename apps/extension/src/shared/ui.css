@@ -144,10 +144,11 @@ p {
 }
 
 .brand-logo {
-  height: 22px;
+  height: 36px;
   width: auto;
   display: block;
   flex-shrink: 0;
+  object-fit: contain;
 }
 
 /* .stack is a column flex with align-items: stretch, which would otherwise
@@ -611,23 +612,12 @@ input[type='checkbox'] {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  margin-bottom: 6px;
 }
 
-.connect-logo__mark {
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
-}
-
-.connect-wordmark {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.015em;
-  color: var(--ink);
-}
-
-.connect-wordmark__accent {
-  color: var(--accent);
+.connect-logo__image {
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
 }
 
 .connect-copy {

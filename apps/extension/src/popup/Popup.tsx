@@ -65,7 +65,7 @@ export function Popup() {
     return (
       <div className="app">
         <div className="panel stack" style={{ paddingTop: 18 }}>
-          <Wordmark height={30} />
+          <Wordmark height={44} />
 
           <div>
             <h1 style={{ fontSize: 17, marginTop: 8 }}>

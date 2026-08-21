@@ -15,13 +15,13 @@ const asset = (file: string): string =>
     : `icons/${file}`;
 
 /** Full logo lockup — mark plus "Assistigo.ai" and the tagline. */
-export function Wordmark({ height = 22 }: { height?: number }) {
+export function Wordmark({ height = 36, className = '' }: { height?: number; className?: string }) {
   return (
     <img
-      className="brand-logo"
+      className={`brand-logo ${className}`.trim()}
       src={asset('wordmark.png')}
       alt="Assistigo.ai"
-      style={{ height }}
+      style={{ height, width: 'auto' }}
       draggable={false}
     />
   );
@@ -41,8 +41,7 @@ export function Mark({ size = 22, className = '' }: { size?: number; className?:
 }
 
 /**
- * Header used by both surfaces. `title` replaces the lockup when the surface needs to name a
- * step instead ("Review and fill"), keeping the mark for continuity.
+ * Header used by both surfaces. Renders the logo lockup and optional right-aligned metadata/badges.
  */
 export function Header({ title, right }: { title?: string; right?: ReactNode }) {
   return (
@@ -54,7 +53,7 @@ export function Header({ title, right }: { title?: string; right?: ReactNode }) 
             <h1 className="truncate">{title}</h1>
           </>
         ) : (
-          <Wordmark />
+          <Wordmark height={36} />
         )}
       </div>
       {right}

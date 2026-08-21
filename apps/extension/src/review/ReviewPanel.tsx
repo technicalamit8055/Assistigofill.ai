@@ -23,6 +23,7 @@ import {
   ScanIcon,
   ShieldIcon,
   SparkIcon,
+  Wordmark,
 } from '../shared/Brand';
 import type { CustomerSummary, SessionState } from '../shared/messages';
 
@@ -280,10 +281,7 @@ export function ReviewPanel() {
           <ConnectDecor />
 
           <div className="connect-logo">
-            <Mark size={64} className="connect-logo__mark" />
-            <p className="connect-wordmark">
-              Assistigo<span className="connect-wordmark__accent">.ai</span>
-            </p>
+            <Wordmark height={72} className="connect-logo__image" />
           </div>
 
           <div className="connect-copy">
@@ -346,7 +344,6 @@ export function ReviewPanel() {
   return (
     <div className="app">
       <Header
-        title="Review and fill"
         right={<span className="badge badge-brand truncate">{session.organizationName}</span>}
       />
 
