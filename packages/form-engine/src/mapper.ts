@@ -8,7 +8,7 @@
  */
 
 import { requiresReview } from '@assistigo/core';
-import { adapterFieldMatches, type PortalAdapter } from './adapters';
+import { adapterDependencyDepth, findAdapterField, type PortalAdapter } from './adapters';
 import { bestMatch } from './scorer';
 import { classifyField, isFileInput, isPasswordField, isSupportedInputType } from './safety';
 import { applyTransform } from './transforms';
@@ -54,6 +54,14 @@ export type MappingInput = {
 
 export type MappingProposal = {
   mappings: FieldMapping[];
+  /**
+   * Signatures in the order they should be written, parents before dependants.
+   *
+   * `mappings` stays in detection order because that is the order the operator reads the page
+   * in, and a review table that reshuffles itself is a review table nobody trusts. Fill order
+   * is a separate concern, so it travels separately.
+   */
+  fillOrder: string[];
   summary: {
     detected: number;
     proposed: number;
@@ -97,9 +105,7 @@ type ResolvedMapping = {
 function resolveMapping(field: DetectedField, input: MappingInput): ResolvedMapping | null {
   // 1. Portal adapter
   if (input.adapter) {
-    const adapterField = input.adapter.fields.find((candidate) =>
-      adapterFieldMatches(candidate, field),
-    );
+    const adapterField = findAdapterField(input.adapter, field);
     if (adapterField) {
       return {
         customerField: adapterField.customerField,
@@ -248,9 +254,7 @@ export function proposeMappings(input: MappingInput): MappingProposal {
      *   - the underlying value has not been verified by a human yet,
      *   - the adapter explicitly demands it.
      */
-    const adapterField = input.adapter?.fields.find((candidate) =>
-      adapterFieldMatches(candidate, field),
-    );
+    const adapterField = input.adapter ? findAdapterField(input.adapter, field) : null;
 
     const reviewRequired =
       requiresReview(resolved.customerField) ||
@@ -275,6 +279,7 @@ export function proposeMappings(input: MappingInput): MappingProposal {
 
   return {
     mappings,
+    fillOrder: dependencyFillOrder(mappings, input.detection.fields, input.adapter ?? null),
     summary: {
       detected: input.detection.fields.length,
       proposed: proposed.length,
@@ -286,6 +291,45 @@ export function proposeMappings(input: MappingInput): MappingProposal {
       payment: mappings.filter((mapping) => mapping.safetyClass === 'payment').length,
     },
   };
+}
+
+export type FillInstructionOptions = {
+  /**
+   * Values the operator typed over the proposal, keyed by signature.
+   *
+   * An edit is taken literally — no transform is applied on top of it. The operator looked at
+   * the field and typed what the portal should receive; re-formatting that would be the tool
+   * overruling the human it just asked.
+   */
+  edits?: Readonly<Record<string, string>>;
+  /** Supplies the `dependsOn` chain, which decides fill order. */
+  adapter?: PortalAdapter | null;
+  /**
+   * A precomputed order (`MappingProposal.fillOrder`), for callers that have the proposal but
+   * not the adapter — the side panel, which is deliberately never sent adapter internals.
+   */
+  order?: readonly string[];
+};
+
+/**
+ * The exact string that will be typed into a field, or `null` if nothing will be.
+ *
+ * Exported because the review table has to show the operator what is actually going to be
+ * written. Showing the raw profile value instead means asking someone to approve `1998-07-14`
+ * and then typing `14/07/1998` — a small dishonesty that costs the operator their trust in the
+ * preview the first time the two differ and they notice.
+ */
+export function resolveFillValue(
+  mapping: Pick<FieldMapping, 'signature' | 'customerField' | 'transform'>,
+  customerValues: Readonly<Record<string, string | null>>,
+  edits?: Readonly<Record<string, string>>,
+): string | null {
+  const edited = edits?.[mapping.signature];
+  if (edited !== undefined) return edited === '' ? null : edited;
+  if (!mapping.customerField) return null;
+
+  const value = applyTransform(mapping.transform, customerValues[mapping.customerField] ?? null);
+  return value === '' ? null : value;
 }
 
 /**
@@ -300,6 +344,7 @@ export function buildFillInstructions(
   customerValues: Readonly<Record<string, string | null>>,
   approvedSignatures: ReadonlySet<string>,
   fields: readonly DetectedField[],
+  options: FillInstructionOptions = {},
 ): FillInstruction[] {
   const fieldBySignature = new Map(fields.map((field) => [field.signature, field]));
   const instructions: FillInstruction[] = [];
@@ -313,8 +358,8 @@ export function buildFillInstructions(
     const field = fieldBySignature.get(mapping.signature);
     if (!field) continue;
 
-    const value = applyTransform(mapping.transform, customerValues[mapping.customerField] ?? null);
-    if (value === null || value === '') continue;
+    const value = resolveFillValue(mapping, customerValues, options.edits);
+    if (value === null) continue;
 
     instructions.push({
       signature: mapping.signature,
@@ -323,5 +368,55 @@ export function buildFillInstructions(
     });
   }
 
-  return instructions;
+  const order =
+    options.order ??
+    (options.adapter ? dependencyFillOrder(mappings, fields, options.adapter) : undefined);
+
+  if (!order) return instructions;
+
+  const rank = new Map(order.map((signature, index) => [signature, index]));
+  // A signature the order does not mention sorts last but keeps its relative position, so an
+  // order list that has gone stale degrades to "fill in the order given" rather than dropping
+  // fields on the floor.
+  return instructions
+    .map((instruction, index) => ({
+      instruction,
+      index,
+      rank: rank.get(instruction.signature) ?? Number.MAX_SAFE_INTEGER,
+    }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map((entry) => entry.instruction);
+}
+
+/**
+ * The order fields should be written in: a dependent dropdown after the parent it waits on.
+ *
+ * The fill executor already waits for a child's options to repopulate, but waiting only works
+ * if the parent was set first. Portals that lay their address block out as State → District →
+ * Block make this free; the ones that put "Block" above "District", or that render the chain in
+ * a modal, do not. Without an adapter this is simply detection order — there is nothing to
+ * infer a dependency from, and inventing one would reorder fills for no reason.
+ */
+export function dependencyFillOrder(
+  mappings: readonly FieldMapping[],
+  fields: readonly DetectedField[],
+  adapter: PortalAdapter | null,
+): string[] {
+  const signatures = mappings.map((mapping) => mapping.signature);
+  if (!adapter) return signatures;
+
+  const depths = adapterDependencyDepth(adapter);
+  const fieldBySignature = new Map(fields.map((field) => [field.signature, field]));
+
+  const depthOf = (signature: string): number => {
+    const field = fieldBySignature.get(signature);
+    if (!field) return 0;
+    const adapterField = findAdapterField(adapter, field);
+    return adapterField ? (depths.get(adapterField.key) ?? 0) : 0;
+  };
+
+  return signatures
+    .map((signature, index) => ({ signature, index, depth: depthOf(signature) }))
+    .sort((a, b) => a.depth - b.depth || a.index - b.index)
+    .map((entry) => entry.signature);
 }

@@ -94,7 +94,14 @@ export function isElementVisible(element: Element): boolean {
     if (style) {
       if (style.display === 'none') return false;
       if (style.visibility === 'hidden' || style.visibility === 'collapse') return false;
-      if (style.opacity === '0') return false;
+      // opacity: 0 on parent containers hides fields, but custom styled inputs (radios/checkboxes)
+      // often set opacity: 0 directly on the input element itself while leaving the wrapper visible.
+      if (
+        style.opacity === '0' &&
+        (depth > 0 || !['radio', 'checkbox', 'file'].includes(element.getAttribute('type') ?? ''))
+      ) {
+        return false;
+      }
     }
     current = current.parentElement;
     depth += 1;
@@ -107,10 +114,7 @@ function textOf(node: Element | null | undefined): string | null {
   return text ? text : null;
 }
 
-/**
- * Label resolution, in the order that gives the most reliable answer first
- * (docs/EXTENSION.md §6). Portals use every one of these, often on the same page.
- */
+/** Label resolution, in the order that gives the most reliable answer first */
 export function resolveLabel(element: Element): string | null {
   const doc = element.ownerDocument;
   const id = element.getAttribute('id');
@@ -124,8 +128,6 @@ export function resolveLabel(element: Element): string | null {
 
   const wrapping = element.closest('label');
   if (wrapping) {
-    // The wrapping label's text includes the control's own text nodes; that is fine for
-    // inputs, which have none.
     const text = textOf(wrapping);
     if (text) return text;
   }
@@ -139,8 +141,6 @@ export function resolveLabel(element: Element): string | null {
     if (parts.length > 0) return parts.join(' ');
   }
 
-  // A table-based layout puts the label in the previous cell — extremely common on older
-  // government portals.
   const cell = element.closest('td');
   const previousCell = cell?.previousElementSibling;
   if (previousCell) {
@@ -148,7 +148,6 @@ export function resolveLabel(element: Element): string | null {
     if (text && text.length <= 120) return text;
   }
 
-  // Otherwise, the nearest preceding text.
   let sibling = element.previousElementSibling;
   let steps = 0;
   while (sibling && steps < 3) {
@@ -164,7 +163,13 @@ export function resolveLabel(element: Element): string | null {
 function resolveNearbyText(element: Element): string | null {
   const parent = element.parentElement;
   if (!parent) return null;
-  const text = textOf(parent);
+
+  const clone = parent.cloneNode(true) as Element;
+  for (const node of Array.from(clone.querySelectorAll('option, script, style'))) {
+    node.remove();
+  }
+
+  const text = textOf(clone);
   if (!text) return null;
   return text.slice(0, NEARBY_TEXT_LIMIT);
 }
@@ -182,36 +187,159 @@ function resolveSectionHeading(element: Element): string | null {
   return null;
 }
 
-function collectOptions(element: Element): FieldOption[] | null {
-  if (element.tagName.toLowerCase() !== 'select') return null;
-  const options = Array.from(element.querySelectorAll('option')).slice(0, MAX_OPTIONS);
-  return options.map((option) => ({
-    value: option.getAttribute('value') ?? option.textContent?.trim() ?? '',
-    label: (option.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 300),
-  }));
+/**
+ * Where a custom dropdown keeps its choices. There is no standard, so this is the union of the
+ * shapes component libraries actually ship: an ARIA option, a plain list item, or a div tagged
+ * with the value it stands for.
+ */
+export const CUSTOM_OPTION_SELECTOR =
+  '[role="option"], option, li, [data-value], [data-option]';
+
+/**
+ * The option elements of a custom dropdown, inline or in the popup it points at.
+ *
+ * Shared with the filler so detection and filling always look in the same places — an option
+ * the operator was shown but the filler cannot find reads as a silent failure.
+ */
+export function collectCustomOptionElements(element: Element): Element[] {
+  const doc = element.ownerDocument;
+  const nodes = new Set<Element>(Array.from(element.querySelectorAll(CUSTOM_OPTION_SELECTOR)));
+
+  const controlsId = element.getAttribute('aria-controls') ?? element.getAttribute('aria-owns');
+  if (controlsId && doc) {
+    const container = doc.getElementById(controlsId);
+    if (container) {
+      // A popup can also be a descendant, so this deliberately unions rather than appends.
+      for (const node of Array.from(container.querySelectorAll(CUSTOM_OPTION_SELECTOR))) {
+        nodes.add(node);
+      }
+    }
+  }
+
+  return Array.from(nodes);
 }
 
-/** True when the control holds something. Deliberately does not report *what*. */
+function collectOptions(element: Element): FieldOption[] | null {
+  const tag = element.tagName.toLowerCase();
+  const doc = element.ownerDocument;
+
+  // Standard <select>
+  if (tag === 'select') {
+    const options = Array.from(element.querySelectorAll('option')).slice(0, MAX_OPTIONS);
+    return options.map((option) => ({
+      value: option.getAttribute('value') ?? option.textContent?.trim() ?? '',
+      label: (option.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 300),
+    }));
+  }
+
+  // <input list="datalist-id">
+  const listId = element.getAttribute('list');
+  if (listId && doc) {
+    const datalist = doc.getElementById(listId);
+    if (datalist) {
+      const options = Array.from(datalist.querySelectorAll('option')).slice(0, MAX_OPTIONS);
+      if (options.length > 0) {
+        return options.map((option) => ({
+          value: option.getAttribute('value') ?? option.textContent?.trim() ?? '',
+          label: (option.textContent ?? option.getAttribute('value') ?? '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 300),
+        }));
+      }
+    }
+  }
+
+  // Custom ARIA dropdown / combobox / listbox
+  const role = element.getAttribute('role')?.toLowerCase();
+  if (role === 'combobox' || role === 'listbox' || role === 'select' || element.hasAttribute('aria-haspopup')) {
+    const optionNodes = collectCustomOptionElements(element);
+
+    if (optionNodes.length > 0) {
+      return optionNodes.slice(0, MAX_OPTIONS).map((opt) => {
+        const val =
+          opt.getAttribute('data-value') ??
+          opt.getAttribute('data-option') ??
+          opt.getAttribute('value') ??
+          opt.textContent?.trim() ??
+          '';
+        const lbl = (opt.textContent ?? val).replace(/\s+/g, ' ').trim().slice(0, 300);
+        return { value: val, label: lbl };
+      });
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Types the browser hands a value to whether or not anyone touched them: a slider reports the
+ * midpoint of its bounds, a colour swatch reports #000000. Reading those back as "already
+ * filled" would make every slider and colour picker permanently unfillable, so for these the
+ * question is whether the *page* set a value, not what the widget currently reads.
+ */
+const BROWSER_DEFAULTED_TYPES = ['range', 'color'] as const;
+
 function hasValue(element: Element): boolean {
+  const role = element.getAttribute('role')?.toLowerCase();
+
   if (element instanceof HTMLInputElement) {
     if (element.type === 'checkbox' || element.type === 'radio') return element.checked;
     if (element.type === 'file') return element.files !== null && element.files.length > 0;
+    if ((BROWSER_DEFAULTED_TYPES as readonly string[]).includes(element.type)) {
+      return (element.getAttribute('value') ?? '').trim() !== '';
+    }
     return element.value.trim() !== '';
   }
   if (element instanceof HTMLTextAreaElement) return element.value.trim() !== '';
   if (element instanceof HTMLSelectElement) {
+    // A multi-select has no placeholder first option to discount; nothing selected is the empty state.
+    if (element.multiple) return element.selectedOptions.length > 0;
     return element.value.trim() !== '' && element.selectedIndex > 0;
   }
+  if (element.hasAttribute('contenteditable') && element.getAttribute('contenteditable') !== 'false') {
+    return (element.textContent ?? '').trim() !== '';
+  }
+
+  const ariaChecked = element.getAttribute('aria-checked');
+  if (ariaChecked !== null) return ariaChecked === 'true';
+
+  const ariaValuenow = element.getAttribute('aria-valuenow');
+  if (ariaValuenow !== null) {
+    // ARIA requires a slider to publish its position, exactly like <input type="range"> above.
+    if (role === 'slider') return false;
+    return ariaValuenow.trim() !== '';
+  }
+
+  const valAttr = element.getAttribute('value');
+  if (valAttr !== null && valAttr.trim() !== '') return true;
+
   return false;
 }
 
 function tagNameOf(element: Element): DetectedField['tagName'] {
   const tag = element.tagName.toLowerCase();
   if (tag === 'select' || tag === 'textarea') return tag;
+  const role = element.getAttribute('role')?.toLowerCase();
+  if (role === 'combobox' || role === 'listbox' || role === 'select') return 'select';
   return 'input';
 }
 
 function inputTypeOf(element: Element): string {
+  if (element.hasAttribute('contenteditable') && element.getAttribute('contenteditable') !== 'false') {
+    return 'contenteditable';
+  }
+  const role = element.getAttribute('role')?.toLowerCase();
+  if (role) {
+    if (role === 'checkbox') return 'checkbox';
+    if (role === 'radio') return 'radio';
+    if (role === 'combobox') return 'combobox';
+    if (role === 'listbox' || role === 'select') return 'select-one';
+    if (role === 'switch') return 'checkbox';
+    if (role === 'slider') return 'range';
+    if (role === 'spinbutton') return 'number';
+    if (role === 'textbox') return 'text';
+  }
   const tag = element.tagName.toLowerCase();
   if (tag === 'textarea') return 'textarea';
   if (tag === 'select') {
@@ -220,7 +348,31 @@ function inputTypeOf(element: Element): string {
   return (element.getAttribute('type') ?? 'text').toLowerCase();
 }
 
-const FIELD_SELECTOR = 'input, select, textarea';
+/**
+ * Everything that could be a field: native controls, rich-text hosts, and the ARIA roles a
+ * component library uses when it reimplements a control out of divs.
+ *
+ * Exported because a field's signature is derived from its position in *this* selector's result
+ * list. The filler recomputes signatures against the live DOM, so if it queried a different set
+ * of elements every signature would resolve to the wrong field.
+ */
+export const FIELD_SELECTOR =
+  'input, select, textarea, [contenteditable="true"], [contenteditable=""], [role="checkbox"], [role="radio"], [role="combobox"], [role="listbox"], [role="select"], [role="textbox"], [role="switch"], [role="slider"], [role="spinbutton"]';
+
+function querySelectorAllDeep(root: ParentNode, selector: string): Element[] {
+  const elements: Element[] = Array.from(root.querySelectorAll(selector));
+  try {
+    const children = root.querySelectorAll('*');
+    for (const child of Array.from(children)) {
+      if (child.shadowRoot) {
+        elements.push(...querySelectorAllDeep(child.shadowRoot, selector));
+      }
+    }
+  } catch {
+    // Edge cases in legacy browsers or strict security contexts.
+  }
+  return elements;
+}
 
 export function detectFields(doc: Document, frame = 0): DetectedField[] {
   const forms = Array.from(doc.forms);
@@ -231,7 +383,7 @@ export function detectFields(doc: Document, frame = 0): DetectedField[] {
     }
   });
 
-  const elements = Array.from(doc.querySelectorAll(FIELD_SELECTOR)).slice(0, MAX_FIELDS);
+  const elements = querySelectorAllDeep(doc, FIELD_SELECTOR).slice(0, MAX_FIELDS);
   const fields: DetectedField[] = [];
 
   elements.forEach((element, index) => {
@@ -239,6 +391,10 @@ export function detectFields(doc: Document, frame = 0): DetectedField[] {
 
     // Structural inputs are not customer data and only add noise to the review list.
     if (['hidden', 'submit', 'reset', 'button', 'image'].includes(inputType)) return;
+
+    // Listbox inside a combobox is the option container, not a separate field.
+    const role = element.getAttribute('role')?.toLowerCase();
+    if (role === 'listbox' && element.closest('[role="combobox"]')) return;
 
     const formIndex = formOf.get(element) ?? -1;
 

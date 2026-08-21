@@ -28,12 +28,12 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         <header className="flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label={t('app.name')}>
             <Image
-              src="/assistfill-logo.png"
+              src="/Bharatfill-logo.png"
               alt={t('app.name')}
-              width={360}
-              height={120}
+              width={480}
+              height={160}
               priority
-              className="h-10 w-auto object-contain object-left"
+              className="h-14 w-auto object-contain object-left"
             />
           </Link>
 

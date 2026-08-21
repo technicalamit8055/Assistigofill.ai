@@ -48,7 +48,7 @@ export function Footer() {
           {/* Brand Col */}
           <div className="md:col-span-5">
             <Link href="/" className="inline-block bg-white px-3 py-2 rounded-xl shadow-sm">
-              <AssistigoLogo height={56} />
+              <AssistigoLogo height={80} />
             </Link>
             <p className="mt-4 text-xs leading-relaxed text-slate-400 max-w-sm font-medium">
               India-first AI form-filling extension and candidate profile vault for CSCs, cyber cafes, VLEs, and individual applicants.

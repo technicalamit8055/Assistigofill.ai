@@ -39,7 +39,16 @@
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
 
-  "host_permissions": [],
+  "host_permissions": ["http://*/*", "https://*/*"],
+
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
 
   "optional_host_permissions": ["http://*/*", "https://*/*"],
 

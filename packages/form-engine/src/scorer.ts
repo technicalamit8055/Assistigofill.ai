@@ -124,6 +124,13 @@ function bestSignal(
     }
   }
 
+  /*
+   * Beyond this point we are matching text that does not belong to this field alone: the
+   * surrounding paragraph, and the heading over the whole section. Entries whose synonyms are
+   * container words opt out — see `ownTextOnly` in dictionary.ts.
+   */
+  if (entry.ownTextOnly) return null;
+
   if (
     texts.nearby &&
     synonyms.some((synonym) => synonym.length > 3 && texts.nearby.includes(synonym))

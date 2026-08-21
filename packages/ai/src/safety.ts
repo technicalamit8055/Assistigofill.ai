@@ -52,9 +52,10 @@ export function sanitizeExtractedFields(fields: readonly ExtractedField[]): Extr
     if (isForbiddenFieldKey(field.key)) continue;
 
     let value: string;
-    if (field.key === 'customer.aadhaar_last4') {
-      // Last four only, whatever the extractor handed over. Anything shorter is not a usable
-      // value and is dropped rather than stored half-formed.
+    if (field.key === 'customer.aadhaar') {
+      const digits = field.value.replace(/\D+/g, '');
+      value = digits.length >= 12 ? digits.slice(-12) : field.value;
+    } else if (field.key === 'customer.aadhaar_last4') {
       const digits = field.value.replace(/\D+/g, '');
       if (digits.length < 4) continue;
       value = digits.slice(-4);

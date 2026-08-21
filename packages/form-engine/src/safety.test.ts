@@ -148,24 +148,35 @@ describe('safety — unsupported inputs', () => {
     expect(isSupportedInputType('file')).toBe(false);
   });
 
-  it('supports the field types listed in §14.5', () => {
+  it('supports the field types listed in §14.5 and expanded field types', () => {
     for (const type of [
       'text',
       'email',
       'tel',
       'date',
+      'datetime-local',
+      'month',
+      'week',
+      'time',
+      'color',
+      'range',
       'number',
       'select-one',
+      'select-multiple',
       'radio',
       'checkbox',
       'textarea',
+      'contenteditable',
+      'combobox',
+      'listbox',
+      'switch',
     ]) {
       expect(isSupportedInputType(type), type).toBe(true);
     }
   });
 
   it('refuses types it has no rule for, rather than guessing', () => {
-    for (const type of ['hidden', 'color', 'range', 'button', 'submit', 'image']) {
+    for (const type of ['hidden', 'button', 'submit', 'image', 'file', 'password']) {
       expect(isSupportedInputType(type), type).toBe(false);
     }
   });

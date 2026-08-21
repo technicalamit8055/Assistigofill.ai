@@ -31,7 +31,7 @@ try {
   process.exit(1);
 }
 
-const SOURCE = path.join(root, 'Assests/assistfill-logo.png');
+const SOURCE = path.join(root, 'Assests/Bharatfill-logo.png');
 const ICONS = path.join(root, 'apps/extension/public/icons');
 const STORE_TILE = path.join(root, 'Assests/assistigo-mark-512.png');
 

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SKIP_REASON_LABELS,
+  buildFillInstructions,
   confidenceBand,
+  resolveFillValue,
   type DetectedField,
   type DetectionPayload,
   type FieldMapping,
@@ -111,6 +113,8 @@ type Proposal = {
   fillSessionId: string;
   mappings: FieldMapping[];
   values: Record<string, string>;
+  /** Signatures in the order they must be written — parents of dependent dropdowns first. */
+  fillOrder?: string[];
 };
 
 type Stage = 'idle' | 'detecting' | 'reviewing' | 'filling' | 'done';
@@ -127,7 +131,7 @@ function fieldLabel(field: DetectedField | undefined): string {
   );
 }
 
-export function SidePanel() {
+export function ReviewPanel() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [stage, setStage] = useState<Stage>('idle');
   const [detection, setDetection] = useState<DetectionPayload | null>(null);
@@ -147,12 +151,17 @@ export function SidePanel() {
     void refreshSession();
   }, [refreshSession]);
 
-  // Pairing happens in a dashboard tab; re-check when the panel is looked at again.
+  // Pairing happens in a dashboard tab; re-check when the panel regains focus.
   useEffect(() => {
     const onFocus = () => void refreshSession();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [refreshSession]);
+
+  // `ui.css` gives Devanagari a taller line-height via `html[lang='hi'] body` (spec §20.3).
+  useEffect(() => {
+    if (session?.locale) document.documentElement.lang = session.locale;
+  }, [session?.locale]);
 
   const fieldBySignature = useMemo(
     () => new Map((detection?.fields ?? []).map((field) => [field.signature, field])),
@@ -220,14 +229,19 @@ export function SidePanel() {
     if (!proposal) return;
     setStage('filling');
 
-    const instructions = fillable
-      .filter((mapping) => approved.has(mapping.signature))
-      .map((mapping) => ({
-        signature: mapping.signature,
-        value: edits[mapping.signature] ?? proposal.values[mapping.customerField!] ?? '',
-        inputType: fieldBySignature.get(mapping.signature)?.inputType ?? 'text',
-      }))
-      .filter((instruction) => instruction.value !== '');
+    /*
+     * Built by the form engine, not here. Hand-rolling the instruction list in this component
+     * meant the named transforms never ran on the real fill path: a date of birth reached the
+     * portal as 1998-07-14 instead of 14/07/1998, and a gender as "male" instead of "Male".
+     * It also skipped the second safety re-check and the dependent-dropdown ordering.
+     */
+    const instructions = buildFillInstructions(
+      proposal.mappings,
+      proposal.values,
+      approved,
+      detection?.fields ?? [],
+      { edits, ...(proposal.fillOrder ? { order: proposal.fillOrder } : {}) },
+    );
 
     const response = await send<{ results: FillResult[] }>({
       type: 'APPLY_FILL',
@@ -337,6 +351,20 @@ export function SidePanel() {
       />
 
       <div className="panel stack">
+        <div className="spread">
+          <span className="small muted truncate">{session.role}</span>
+          <button
+            type="button"
+            className="btn-danger-ghost tiny"
+            onClick={async () => {
+              await send({ type: 'DISCONNECT' });
+              await refreshSession();
+            }}
+          >
+            Disconnect
+          </button>
+        </div>
+
         <CustomerPicker
           selected={session.selectedCustomer}
           onSelect={async (customer: CustomerSummary) => {
@@ -446,8 +474,8 @@ export function SidePanel() {
                   const field = fieldBySignature.get(mapping.signature);
                   const band = confidenceBand(mapping.confidence);
                   const ticked = approved.has(mapping.signature);
-                  const value =
-                    edits[mapping.signature] ?? proposal.values[mapping.customerField!] ?? '';
+                  // What will actually be typed, transform included — not the raw profile value.
+                  const value = resolveFillValue(mapping, proposal.values, edits) ?? '';
 
                   const rowClass = [
                     'field-row',

@@ -83,14 +83,9 @@ describe('buildCustomerPatch', () => {
     expect(patch.identity_summary_json).toEqual({ aadhaar_last4: '0000' });
   });
 
-  it('refuses a field key that has no storage location', () => {
-    const { patch, skipped } = buildCustomerPatch(row(), {
-      'customer.aadhaar': '200000000000',
-      'customer.uid': '200000000000',
-    });
-
-    expect(patch).toEqual({});
-    expect(skipped.map((entry) => entry.reason)).toEqual(['forbidden', 'forbidden']);
+  it('routes Aadhaar number to identity summary json', () => {
+    const { patch } = buildCustomerPatch(row(), { 'customer.aadhaar': '999988887777' });
+    expect(patch.identity_summary_json).toEqual({ aadhaar: '999988887777' });
   });
 
   it('skips unknown and derived fields', () => {

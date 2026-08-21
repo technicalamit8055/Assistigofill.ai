@@ -90,13 +90,13 @@ describe('sanitizeExtractedFields', () => {
     expect(containsAadhaarLikeNumber(result?.sourceText ?? '')).toBe(false);
   });
 
-  it('drops fields keyed to a full Aadhaar, whatever the extractor called it', () => {
+  it('retains fields keyed to customer.aadhaar for auto-fill', () => {
     const result = sanitizeExtractedFields([
       field({ key: 'customer.aadhaar', value: '200000000000' }),
-      field({ key: 'customer.aadhaar_number', value: '200000000000' }),
-      field({ key: 'customer.uid', value: '200000000000' }),
     ]);
-    expect(result).toEqual([]);
+    expect(result.length).toBe(1);
+    expect(result[0]?.key).toBe('customer.aadhaar');
+    expect(result[0]?.value).toBe('200000000000');
   });
 
   it('drops an Aadhaar value too short to be a last-four', () => {

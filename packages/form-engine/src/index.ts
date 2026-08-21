@@ -11,4 +11,5 @@ export * from './dictionary';
 export * from './scorer';
 export * from './transforms';
 export * from './adapters';
+export * from './adapter-registry';
 export * from './mapper';

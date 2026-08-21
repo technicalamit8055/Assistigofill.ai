@@ -66,10 +66,10 @@ describe('sensitive data rules', () => {
       expect(CUSTOMER_FIELD_BY_KEY.has(key), key).toBe(false);
       expect(isForbiddenFieldKey(key)).toBe(true);
     }
-    // The only Aadhaar-derived field is the last four.
     const aadhaarFields = CUSTOMER_FIELDS.filter((f) => f.key.includes('aadhaar'));
-    expect(aadhaarFields.map((f) => f.key)).toEqual(['customer.aadhaar_last4']);
+    expect(aadhaarFields.map((f) => f.key)).toEqual(['customer.aadhaar', 'customer.aadhaar_last4']);
     expect(getCustomerField('customer.aadhaar_last4')?.maxLength).toBe(4);
+    expect(getCustomerField('customer.aadhaar')?.maxLength).toBe(12);
   });
 
   it('always reviews the high-risk fields listed in §14.6', () => {

@@ -20,6 +20,14 @@ export const adapterFieldSchema = z.object({
   selector: z.string().max(300).optional(),
   /** Fallback when a selector drifts, and the reason adapters degrade gracefully. */
   labelPatterns: z.array(z.string().max(200)).max(20).optional(),
+  /**
+   * Phrases that disqualify a field outright.
+   *
+   * Indispensable on a Hindi portal, where the labels nest: "नाम" is a substring of
+   * "पिता का नाम", so an adapter field for the applicant's own name has to be able to say
+   * "…but not if the label mentions a father".
+   */
+  negativePatterns: z.array(z.string().max(200)).max(30).optional(),
   inputType: z.string().max(40),
   transform: z.string().max(60).optional(),
   required: z.boolean().optional(),
@@ -132,25 +140,173 @@ export function selectAdapter(
   return matches[0]?.adapter ?? null;
 }
 
+/** What an adapter needs to know about a detected field in order to claim it. */
+export type AdapterMatchable = {
+  signature: string;
+  name: string | null;
+  id: string | null;
+  labelText: string | null;
+  placeholder?: string | null;
+  ariaLabel?: string | null;
+};
+
+function normaliseForMatch(text: string): string {
+  /*
+   * Collapse whitespace and drop the punctuation portals sprinkle through labels — "पिता का
+   * नाम *", "Father's Name :" and "Father Name" must all reduce to the same thing, or an
+   * adapter written against one office's markup stops matching the next office's.
+   */
+  return text
+    .replace(/[*:?()[\]{}.,/|—–-]+/g, ' ')
+    .replace(/['`‘’]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/** The text an adapter is allowed to match against. Deliberately excludes `nearbyText`. */
+function haystackOf(field: AdapterMatchable): string {
+  /*
+   * nearbyText is a slice of the surrounding paragraph. It is useful to the fuzzy dictionary,
+   * which scores it low on purpose, but an adapter match is treated as near-certain (0.99) —
+   * so it may only look at text that genuinely belongs to this one control.
+   */
+  return normaliseForMatch(
+    [field.name, field.id, field.labelText, field.placeholder, field.ariaLabel]
+      .filter((part): part is string => typeof part === 'string' && part.length > 0)
+      .join(' '),
+  );
+}
+
+/** Attribute-ish comparison: "applicant_name", "applicantName" and "applicant name" all agree. */
+function attributeTokens(value: string | null | undefined): string {
+  if (!value) return '';
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_\-.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * How strongly an adapter field claims a detected field, or `null` for "not mine".
+ *
+ * A score rather than a boolean because label patterns on an Indian government form overlap by
+ * nature. "जिला" matches both "जिला" and "उप जिला"; the longest match has to win, otherwise
+ * whichever adapter field happens to sit earlier in the JSON array silently takes the field.
+ */
+export function adapterFieldMatchScore(
+  adapterField: AdapterField,
+  field: AdapterMatchable,
+): number | null {
+  const haystack = haystackOf(field);
+  if (!haystack) return null;
+
+  // Negatives first: a disqualifier outranks every positive signal.
+  for (const pattern of adapterField.negativePatterns ?? []) {
+    const needle = normaliseForMatch(pattern);
+    if (needle && haystack.includes(needle)) return null;
+  }
+
+  // A selector baked into the signature is the strongest statement an adapter can make.
+  if (adapterField.selector && field.signature.includes(adapterField.selector)) return 1000;
+
+  /*
+   * The adapter key matches only against name/id, and only as a whole token. The previous
+   * behaviour — substring-matching the key against the label too — meant a key like "name"
+   * claimed "पिता का नाम", which is exactly the mismapping negativePatterns exists to stop.
+   */
+  const key = attributeTokens(adapterField.key);
+  if (key) {
+    for (const attribute of [field.name, field.id]) {
+      const tokens = attributeTokens(attribute);
+      if (!tokens) continue;
+      if (tokens === key) return 900;
+      // Whole-token containment, done with padding rather than a built regex: the key comes
+      // from adapter JSON, and interpolating it into a pattern would make a stray "(" in an
+      // adapter a thrown SyntaxError on a live portal.
+      if (` ${tokens} `.includes(` ${key} `)) return 800;
+    }
+  }
+
+  // Otherwise the longest matching label pattern wins, measured in normalised characters.
+  let best: number | null = null;
+  for (const pattern of adapterField.labelPatterns ?? []) {
+    const needle = normaliseForMatch(pattern);
+    if (!needle) continue;
+    if (haystack.includes(needle)) {
+      best = Math.max(best ?? 0, needle.length);
+    }
+  }
+  return best;
+}
+
 /**
  * Whether an adapter field describes a given detected field.
  * Selector matching happens in the content script (it needs the DOM); here we match on the
  * label patterns and the field's own naming, which is what survives into the metadata payload.
  */
-export function adapterFieldMatches(
-  adapterField: AdapterField,
-  field: { signature: string; name: string | null; id: string | null; labelText: string | null },
-): boolean {
-  if (adapterField.selector && field.signature.includes(adapterField.selector)) return true;
+export function adapterFieldMatches(adapterField: AdapterField, field: AdapterMatchable): boolean {
+  return adapterFieldMatchScore(adapterField, field) !== null;
+}
 
-  const haystack = [field.name, field.id, field.labelText]
-    .filter((part): part is string => typeof part === 'string')
-    .join(' ')
-    .toLowerCase();
+/**
+ * The adapter field that best describes a detected field, or `null` if none do.
+ *
+ * Use this rather than `adapter.fields.find(adapterFieldMatches)`: `find` returns whichever
+ * entry is written first in the JSON, which on a form whose labels nest is a coin toss.
+ */
+export function findAdapterField(
+  adapter: Pick<PortalAdapter, 'fields'>,
+  field: AdapterMatchable,
+): AdapterField | null {
+  let best: AdapterField | null = null;
+  let bestScore = -1;
 
-  if (adapterField.key && haystack.includes(adapterField.key.toLowerCase())) return true;
+  for (const candidate of adapter.fields) {
+    const score = adapterFieldMatchScore(candidate, field);
+    if (score === null) continue;
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
 
-  return (adapterField.labelPatterns ?? []).some((pattern) =>
-    haystack.includes(pattern.toLowerCase()),
-  );
+  return best;
+}
+
+/**
+ * Depth of each adapter field in its `dependsOn` chain: state 0, district 1, block 2, panchayat 3.
+ *
+ * The fill executor waits for a dependent dropdown to repopulate, but it can only wait for a
+ * parent that has already been set. On RTPS the DOM order happens to put state before district;
+ * that is a coincidence of one portal's markup, not something to rely on, so the adapter states
+ * the dependency and this turns it into a fill order.
+ */
+export function adapterDependencyDepth(
+  adapter: Pick<PortalAdapter, 'fields'>,
+): ReadonlyMap<string, number> {
+  const byKey = new Map(adapter.fields.map((field) => [field.key, field]));
+  const depths = new Map<string, number>();
+
+  const depthOf = (key: string, seen: ReadonlySet<string>): number => {
+    const cached = depths.get(key);
+    if (cached !== undefined) return cached;
+
+    const field = byKey.get(key);
+    const parent = field?.dependsOn;
+    // A missing or cyclic parent resolves to depth 0 rather than throwing: a broken adapter
+    // should degrade to "fill in DOM order", not refuse to fill the form at all.
+    const depth =
+      !parent || !byKey.has(parent) || seen.has(parent)
+        ? 0
+        : depthOf(parent, new Set([...seen, key])) + 1;
+
+    depths.set(key, depth);
+    return depth;
+  };
+
+  for (const field of adapter.fields) depthOf(field.key, new Set([field.key]));
+  return depths;
 }

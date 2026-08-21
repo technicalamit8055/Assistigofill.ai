@@ -31,8 +31,13 @@ Icons are generated from `Assests/assistfill-logo.png` into `apps/extension/publ
 | `background/` (service worker) | auth/session, message routing, all API calls          | touch the DOM                       |
 | `content/`                     | detect fields, apply fills, floating launcher         | store PII, log values, click submit |
 | `popup/`                       | connection status, customer selector, "Detect fields" | render untrusted HTML               |
-| `sidepanel/`                   | review table, confidence, edit/skip, Fill, results    | call the API directly               |
+| `review/`                      | review table, confidence, edit/skip, Fill, results    | call the API directly               |
+| `sidepanel/`                   | mounts `review/ReviewPanel` in Chrome's side panel    | add chrome the browser provides     |
 | `shared/`                      | Zod message schemas, API client, storage helpers      | import DOM APIs                     |
+
+The review UI is the single surface, Chrome's side panel — a floating on-page overlay was tried
+and removed; see the roadmap for why. `review/ReviewPanel.tsx` renders a Disconnect button next to
+the organization/role row, so ending a session does not require reopening the popup.
 
 ## 3. Auth
 
@@ -40,7 +45,7 @@ The extension does not implement its own login form. "Connect account" opens
 `${APP_URL}/extension/connect?ext=<runtime id>`, the signed-in dashboard mints a short-lived
 pairing code, and the service worker exchanges it at `POST /api/extension/pair` for a session.
 Tokens live in `chrome.storage.session` and are refreshed by the service worker. Signing out of
-the dashboard revokes the extension session — the extension holds the *Supabase* refresh token,
+the dashboard revokes the extension session — the extension holds the _Supabase_ refresh token,
 so `POST /api/extension/refresh` fails the moment that token family is revoked.
 
 Rationale: no password ever passes through extension code, and Chrome Web Store review sees no
@@ -61,13 +66,13 @@ service worker  ──▶  POST /api/extension/pair { code }  ──▶  { acces
 
 What holds this together:
 
-| Risk                                        | Control                                                            |
-| ------------------------------------------- | ------------------------------------------------------------------ |
-| A crafted `?ext=` pairs a hostile extension | `resolveExtensionId` checks `EXTENSION_ALLOWED_IDS`; empty allowlist fails closed outside local |
-| A page other than the dashboard sends a code | `externally_connectable`, plus an exact `sender.origin` comparison in the service worker |
-| The pairing table leaks                     | Only SHA-256 of the code is stored; the session is AES-256-GCM sealed with the code hash as AAD |
-| A code is replayed                          | `consume_extension_pairing_code()` checks expiry and marks consumed in one statement |
-| A code outlives its tab                     | 120-second TTL, one live code per user, `purge_extension_pairing_codes()` sweeps the rest |
+| Risk                                         | Control                                                                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| A crafted `?ext=` pairs a hostile extension  | `resolveExtensionId` checks `EXTENSION_ALLOWED_IDS`; empty allowlist fails closed outside local |
+| A page other than the dashboard sends a code | `externally_connectable`, plus an exact `sender.origin` comparison in the service worker        |
+| The pairing table leaks                      | Only SHA-256 of the code is stored; the session is AES-256-GCM sealed with the code hash as AAD |
+| A code is replayed                           | `consume_extension_pairing_code()` checks expiry and marks consumed in one statement            |
+| A code outlives its tab                      | 120-second TTL, one live code per user, `purge_extension_pairing_codes()` sweeps the rest       |
 
 ### CORS
 
@@ -101,6 +106,9 @@ DETECT_FIELDS            → background → content
 DETECT_RESULT            content → background → sidepanel
 REQUEST_MAPPING          sidepanel → background → server
 APPLY_FILL               sidepanel → background → content   (values travel only here)
+                         instructions come from buildFillInstructions(), never from the panel
+                         itself: that applies the named transforms, re-checks safety classes,
+                         and orders dependent dropdowns parent-first
 FILL_RESULT              content → background → sidepanel → server
 REPORT_FORM              sidepanel → background → server
 ```
@@ -126,9 +134,22 @@ weakened.
 Walks `document.forms` plus loose inputs, skipping invisible elements
 (`offsetParent === null`, zero-size, `visibility:hidden`, `opacity:0`). Label resolution order:
 `<label for>` → wrapping `<label>` → `aria-labelledby` → `aria-label` → preceding text node →
-table header cell → placeholder. Nearby text is trimmed to 120 characters. Same-origin iframes
-are walked; cross-origin frames are reported as `frameBlocked` so the operator knows a section
-could not be read.
+table header cell → placeholder. Nearby text is trimmed to 120 characters and excludes a
+`<select>`'s own `<option>` text — options are the field's possible _values_, they travel
+separately, and leaving them in made them act as naming signals. Same-origin iframes are walked;
+cross-origin frames are reported as `frameBlocked` so the operator knows a section could not be
+read.
+
+`FIELD_SELECTOR` in `detector.ts` is the one definition of what counts as a field: native
+controls, `[contenteditable]`, and the ARIA roles a component library uses when it rebuilds a
+control out of divs. It is exported and imported by `filler.ts` rather than duplicated, because a
+field's signature is derived from its index in *that selector's* result list — a filler querying a
+different set of elements would resolve every signature to the wrong field. The same applies to
+`collectCustomOptionElements`: detection and filling look for a custom dropdown's options in the
+same places, so an option the operator was shown is never one the filler cannot find.
+
+The types a control reports and the values it can accept are covered in
+`docs/FORM_ENGINE.md` §9a.
 
 ## 7. Storage
 

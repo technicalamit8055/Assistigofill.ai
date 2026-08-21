@@ -1,0 +1,217 @@
+{
+  "id": "c198a450-1038-44e9-aff5-3306341aa3a8",
+  "slug": "bihar-rtps-serviceonline",
+  "portalName": "RTPS Bihar — ServicePlus (serviceonline.bihar.gov.in)",
+  "formName": "Certificate applications (income / caste / residence)",
+  "region": "Bihar",
+  "urlPatterns": [
+    "https://serviceonline.bihar.gov.in/**",
+    "https://*.serviceonline.bihar.gov.in/**"
+  ],
+  "version": "1.0.0",
+  "status": "testing",
+  "notes": "One adapter covers all three RTPS certificate services because the only thing that distinguishes them is the ?serviceId= query parameter, and detection deliberately never transmits query strings (spec 14.2). Per-field labelPatterns do the selecting instead: the annual-income field simply does not match on a caste form. Matching is label-driven on purpose — ServicePlus generates its input name/id attributes, so a hand-written selector would be a guess that silently rots. Labels below were read off the live portal.",
+  "knownIssues": "Aadhaar (आधार संख्या) is deliberately not mapped: the portal wants all twelve digits and Assistigo stores only the last four, so the operator types it. Caste (जाति) and sub-division (अनुमंडल) have no equivalent in the customer field registry and are left to the operator. Salutation (अभिवादन), service type (सेवा का प्रकार), local body type and profession (पेशा) are portal-specific choices, not customer data.",
+  "documentRequirements": [
+    {
+      "key": "photo",
+      "label": "Applicant photograph",
+      "presetCode": "rtps.photo",
+      "required": true,
+      "notes": "ServicePlus upload step, after the form. The operator attaches it."
+    },
+    {
+      "key": "address_proof",
+      "label": "Address proof (Aadhaar / voter ID / electricity bill)",
+      "required": true
+    },
+    {
+      "key": "self_declaration",
+      "label": "Self declaration (स्वघोषणा)",
+      "required": false,
+      "notes": "Required for income certificate at most offices."
+    }
+  ],
+  "fields": [
+    {
+      "key": "applicant_name",
+      "customerField": "customer.full_name",
+      "labelPatterns": ["आवेदक का नाम", "name of applicant", "applicant name"],
+      "negativePatterns": [
+        "पिता",
+        "माता",
+        "पति",
+        "father",
+        "mother",
+        "husband",
+        "spouse",
+        "hindi",
+        "हिंदी"
+      ],
+      "inputType": "text",
+      "required": true
+    },
+    {
+      "key": "applicant_name_hi",
+      "customerField": "customer.full_name_hi",
+      "labelPatterns": [
+        "आवेदक का नाम (हिंदी",
+        "नाम हिंदी में",
+        "applicant name in hindi",
+        "name in hindi"
+      ],
+      "negativePatterns": ["पिता", "माता", "पति", "father", "mother", "husband"],
+      "inputType": "text"
+    },
+    {
+      "key": "father_name",
+      "customerField": "customer.father_name",
+      "labelPatterns": ["पिता का नाम", "name of father", "father's name", "father name"],
+      "negativePatterns": ["माता", "mother", "पति", "husband"],
+      "inputType": "text",
+      "required": true
+    },
+    {
+      "key": "mother_name",
+      "customerField": "customer.mother_name",
+      "labelPatterns": ["माता का नाम", "name of mother", "mother's name", "mother name"],
+      "negativePatterns": ["पिता", "father", "पति", "husband"],
+      "inputType": "text"
+    },
+    {
+      "key": "husband_name",
+      "customerField": "customer.spouse_name",
+      "labelPatterns": ["पति का नाम", "name of husband", "husband's name", "husband name"],
+      "negativePatterns": ["पिता", "father", "माता", "mother"],
+      "inputType": "text"
+    },
+    {
+      "key": "gender",
+      "customerField": "customer.gender",
+      "labelPatterns": ["लिंग", "gender"],
+      "inputType": "select-one",
+      "transform": "gender.full"
+    },
+    {
+      "key": "date_of_birth",
+      "customerField": "customer.date_of_birth",
+      "labelPatterns": ["जन्म तिथि", "date of birth", "dob"],
+      "inputType": "text",
+      "transform": "date.ddmmyyyy",
+      "reviewRequired": true
+    },
+    {
+      "key": "mobile",
+      "customerField": "customer.mobile",
+      "labelPatterns": [
+        "आवेदक का मोबाइल संख्या",
+        "मोबाइल संख्या",
+        "mobile no. of applicant",
+        "mobile number",
+        "mobile no"
+      ],
+      "negativePatterns": ["otp", "ओटीपी", "alternate", "वैकल्पिक"],
+      "inputType": "text",
+      "transform": "mobile.10digit",
+      "required": true
+    },
+    {
+      "key": "email",
+      "customerField": "customer.email",
+      "labelPatterns": ["आवेदक का ईमेल", "ईमेल", "email of applicant", "email"],
+      "inputType": "text"
+    },
+    {
+      "key": "village_town",
+      "customerField": "customer.address.village_town_city",
+      "labelPatterns": [
+        "ग्राम (village) / मोहल्ला (town)",
+        "ग्राम / मोहल्ला",
+        "ग्राम",
+        "मोहल्ला",
+        "village / town",
+        "village/town",
+        "village"
+      ],
+      "negativePatterns": ["पंचायत", "panchayat", "प्रखंड", "block"],
+      "inputType": "text"
+    },
+    {
+      "key": "post_office",
+      "customerField": "customer.address.post_office",
+      "labelPatterns": ["डाक घर", "डाकघर", "post office", "post offc"],
+      "inputType": "text"
+    },
+    {
+      "key": "police_station",
+      "customerField": "customer.address.police_station",
+      "labelPatterns": ["थाना", "police station", "ps name"],
+      "inputType": "select-one"
+    },
+    {
+      "key": "pincode",
+      "customerField": "customer.address.pincode",
+      "labelPatterns": ["पिन कोड", "पिनकोड", "pin code", "pincode"],
+      "inputType": "text",
+      "transform": "pin.6digit"
+    },
+    {
+      "key": "state",
+      "customerField": "customer.address.state",
+      "labelPatterns": ["राज्य", "state"],
+      "negativePatterns": ["स्थानीय", "local body", "statement"],
+      "inputType": "select-one"
+    },
+    {
+      "key": "district",
+      "customerField": "customer.address.district",
+      "labelPatterns": ["जिला", "जिल्ला", "district"],
+      "negativePatterns": ["उप", "sub"],
+      "inputType": "select-one",
+      "dependsOn": "state"
+    },
+    {
+      "key": "block",
+      "customerField": "customer.address.block",
+      "labelPatterns": ["प्रखंड", "block", "block / taluk", "taluk"],
+      "inputType": "select-one",
+      "dependsOn": "district"
+    },
+    {
+      "key": "panchayat",
+      "customerField": "customer.address.panchayat",
+      "labelPatterns": ["पंचायत", "panchayat", "gram panchayat"],
+      "inputType": "select-one",
+      "dependsOn": "block"
+    },
+    {
+      "key": "ward",
+      "customerField": "customer.address.ward",
+      "labelPatterns": ["वार्ड संख्या", "वार्ड", "ward number", "ward no", "ward"],
+      "inputType": "text",
+      "dependsOn": "block"
+    },
+    {
+      "key": "annual_income",
+      "customerField": "customer.annual_income",
+      "labelPatterns": [
+        "कुल आय (वार्षिक)",
+        "कुल आय",
+        "वार्षिक आय",
+        "total income (annual)",
+        "total income",
+        "annual income"
+      ],
+      "inputType": "text",
+      "transform": "number.plain",
+      "reviewRequired": true
+    },
+    {
+      "key": "permanent_district",
+      "customerField": "customer.permanent_address.district",
+      "labelPatterns": ["स्थायी पता", "permanent address", "permanent district"],
+      "negativePatterns": ["वर्तमान", "present", "current"],
+      "inputType": "select-one"
+    }
+  ]
+}

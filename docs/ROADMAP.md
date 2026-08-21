@@ -51,7 +51,7 @@ Done (added since):
 Remaining:
 
 - [ ] Apply the migrations against a live Supabase (blocked: Docker not installed on this machine)
-      — this also blocks actually *running* `npm run db:seed` and `npm run test:rls` for the
+      — this also blocks actually _running_ `npm run db:seed` and `npm run test:rls` for the
       first time, not just writing them.
 - [ ] `npm run db:types` and wire the generated `Database` type into the Supabase clients
 - [ ] Password reset completion page (`/reset-password`)
@@ -137,6 +137,8 @@ Done:
       crafted `?ext=` link cannot pair someone else's extension
 - [x] `externally_connectable` manifest entry for the dashboard origin
 - [x] Extension icons and the branded popup / side panel
+- [x] Disconnect button added to the side panel, next to the organization/role row, so the
+      operator can end a session without reopening the popup.
 
 Remaining:
 
@@ -159,12 +161,43 @@ Done:
 - [x] Mandatory review for high-risk and unverified fields
 - [x] `POST /api/forms/map` and `PATCH /api/fill-sessions/:id`
 
+Done (added since):
+
+- [x] First real portal adapter — `bihar-rtps-serviceonline` for RTPS Bihar / ServicePlus
+      (`serviceonline.bihar.gov.in`), covering the income, caste and residence certificate
+      forms. One adapter, because the services differ only by `?serviceId=` and §14.2 forbids
+      transmitting the query string; label patterns select per form. Labels were read off the
+      live portal. 17 end-to-end tests against an RTPS-shaped fixture.
+- [x] `BUILT_IN_ADAPTERS` — adapters ship with the build and `POST /api/forms/map` merges the
+      database over them, so an unseeded deployment still supports the portals it knows.
+      `npm run db:seed:adapters` publishes them into `portal_adapters`.
+- [x] Adapter field matching rewritten: longest-match wins rather than first-in-array (labels
+      nest in Hindi — `नाम` ⊂ `पिता का नाम`), `negativePatterns`, placeholder/aria matching,
+      and the adapter `key` no longer substring-matches label text.
+- [x] `dependsOn` wired up — it was schema-only. `MappingProposal.fillOrder` now carries the
+      dependency order through the API to the side panel.
+- [x] Fixed: named transforms never ran on the real fill path. The review panel built its own
+      instruction list, so `date.ddmmyyyy`, `mobile.10digit`, `pin.6digit`, `number.plain` and
+      `gender.full` were all no-ops in the product while passing their unit tests. It now calls
+      `buildFillInstructions`, which also re-checks safety classes and applies the fill order.
+      The review table shows the transformed value, not the raw profile value.
+- [x] Fixed: a `<select>`'s nearby text included its own option labels, so options acted as
+      naming signals. Plus `ownTextOnly` for dictionary entries whose synonyms are container
+      words ("address"), which were claiming every field under a matching section heading.
+
 Remaining:
 
-- [ ] Seed the 3–5 demo adapters into `portal_adapters`
+- [ ] Promote `bihar-rtps-serviceonline` from `testing` to `active` after a manual smoke test
+      against the live portal — the adapter is written from the portal's rendered labels, and
+      only a real run confirms the dependent-dropdown chain and the AJAX timings
+- [ ] Seed the remaining demo adapters into `portal_adapters`
 - [ ] Adapter admin / import UI and the health dashboard
 - [ ] `POST /api/form-reports`
 - [ ] AI-assisted mapping (priority 5), gated on org opt-in
+- [ ] `customer.address.sub_division` in the field registry — RTPS needs अनुमंडल to complete the
+      district → sub-division → block chain, and without it Block is reported as
+      `dependent_not_ready` until the operator picks the sub-division by hand. Registry change,
+      so it needs a migration and a product-owner decision, not a quiet addition
 
 ## Phase 6 — Document tools ☐
 

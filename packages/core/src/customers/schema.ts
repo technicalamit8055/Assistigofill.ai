@@ -76,6 +76,7 @@ export const addressJsonSchema = z.object({
  * Aadhaar number; PAN and account numbers go to `customer_field_values.value_encrypted`.
  */
 export const identitySummarySchema = z.object({
+  aadhaar: trimmedString(14).optional(),
   aadhaar_last4: z
     .string()
     .regex(/^\d{4}$/, 'validation.last4_invalid')

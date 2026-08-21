@@ -22,6 +22,15 @@ export type DictionaryEntry = {
   negative?: readonly string[];
   /** Input types this field is compatible with. A mismatch halves the score. */
   inputTypes?: readonly string[];
+  /**
+   * Match only on the field's own naming — never on nearby text or the section heading.
+   *
+   * For entries whose synonyms are container words. "Address" as a section heading sits above
+   * ten other fields, so without this every dropdown inside a "Present Address" fieldset gets
+   * proposed as the printed-address blob, and the operator's review list fills with noise that
+   * hides the mappings that are actually wrong.
+   */
+  ownTextOnly?: boolean;
   /** Named transform applied to the customer value before filling. */
   transform?: string;
 };
@@ -156,6 +165,7 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
       'date of birth as per certificate',
       'जन्म तिथि',
       'जन्म दिनांक',
+      'जन्म की तारीख',
     ],
     attributes: ['dob', 'dateofbirth', 'birthdate', 'date birth'],
     negative: ['issue', 'expiry', 'valid', 'admission', 'joining', 'marriage'],
@@ -218,6 +228,7 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
       'मोबाइल नंबर',
       'मोबाइल',
       'संपर्क नंबर',
+      'मोबाइल संख्या',
     ],
     attributes: ['mobile', 'mobileno', 'mobilenumber', 'phone', 'phoneno', 'contactno'],
     negative: [
@@ -296,27 +307,54 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
       'गाँव',
       'शहर',
       'कस्बा',
+      /*
+       * RTPS Bihar labels one field "ग्राम (Village) / मोहल्ला (Town)". The compound only —
+       * bare "ग्राम" is a substring of "ग्राम पंचायत", and since a `<select>`'s nearby text
+       * includes its own option labels, a lone "ग्राम" claimed the local-body-type dropdown
+       * off the back of a "ग्राम पंचायत" option.
+       */
+      'ग्राम मोहल्ला',
     ],
     attributes: ['village', 'town', 'city', 'villagetown'],
-    negative: ['birth', 'exam', 'centre', 'center', 'permanent'],
+    negative: [
+      'birth',
+      'exam',
+      'centre',
+      'center',
+      'permanent',
+      'panchayat',
+      'पंचायत',
+      'local body',
+      'निकाय',
+    ],
     inputTypes: ['text', 'select-one'],
   },
   {
     customerField: 'customer.address.post_office',
-    synonyms: ['post office', 'post', 'po', 'डाकघर'],
+    synonyms: ['post office', 'post', 'po', 'डाकघर', 'डाक घर'],
     attributes: ['postoffice', 'post office', 'po'],
     inputTypes: ['text'],
   },
   {
     customerField: 'customer.address.panchayat',
-    synonyms: ['panchayat', 'gram panchayat', 'पंचायत'],
+    synonyms: ['panchayat', 'gram panchayat', 'पंचायत', 'ग्राम पंचायत'],
     attributes: ['panchayat', 'grampanchayat'],
     inputTypes: ['text', 'select-one'],
   },
   {
     customerField: 'customer.address.block',
-    synonyms: ['block', 'tehsil', 'taluka', 'mandal', 'ब्लॉक', 'तहसील'],
-    attributes: ['block', 'tehsil', 'taluka', 'mandal'],
+    synonyms: [
+      'block',
+      'tehsil',
+      'taluka',
+      'taluk',
+      'mandal',
+      'ब्लॉक',
+      'तहसील',
+      // Bihar's revenue unit. RTPS uses it, not "block", in the Hindi label.
+      'प्रखंड',
+    ],
+    attributes: ['block', 'tehsil', 'taluka', 'mandal', 'prakhand'],
     negative: ['permanent'],
     inputTypes: ['text', 'select-one'],
   },
@@ -324,31 +362,40 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     customerField: 'customer.address.police_station',
     synonyms: ['police station', 'ps', 'थाना'],
     attributes: ['policestation', 'police station', 'thana'],
-    inputTypes: ['text'],
+    inputTypes: ['text', 'select-one'],
   },
   {
     customerField: 'customer.address.ward',
-    synonyms: ['ward', 'ward number', 'वार्ड'],
+    synonyms: ['ward', 'ward number', 'वार्ड', 'वार्ड संख्या'],
     attributes: ['ward', 'wardno'],
-    inputTypes: ['text'],
+    negative: ['local body', 'स्थानीय निकाय'],
+    inputTypes: ['text', 'select-one'],
   },
   {
     customerField: 'customer.address.district',
-    synonyms: ['district', 'zila', 'जिला'],
+    synonyms: ['district', 'zila', 'जिला', 'ज़िला'],
     attributes: ['district', 'dist', 'zila'],
-    negative: ['permanent', 'birth', 'exam'],
+    negative: [
+      'permanent',
+      'birth',
+      'exam',
+      'sub division',
+      'subdivision',
+      'sub divisional',
+      'अनुमंडल',
+    ],
     inputTypes: ['select-one', 'text'],
   },
   {
     customerField: 'customer.address.state',
     synonyms: ['state', 'state ut', 'राज्य'],
     attributes: ['state', 'stateid'],
-    negative: ['permanent', 'birth', 'exam', 'statement', 'status'],
+    negative: ['permanent', 'birth', 'exam', 'statement', 'status', 'local body', 'स्थानीय निकाय'],
     inputTypes: ['select-one', 'text'],
   },
   {
     customerField: 'customer.address.pincode',
-    synonyms: ['pin code', 'pincode', 'postal code', 'zip code', 'पिन कोड'],
+    synonyms: ['pin code', 'pincode', 'postal code', 'zip code', 'पिन कोड', 'पिनकोड'],
     attributes: ['pincode', 'pin', 'postalcode', 'zip'],
     negative: ['permanent'],
     inputTypes: ['text', 'number', 'tel'],
@@ -367,6 +414,7 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     attributes: ['address', 'addressline', 'fulladdress'],
     negative: ['permanent', 'email', 'ip'],
     inputTypes: ['textarea', 'text'],
+    ownTextOnly: true,
   },
 
   // --- address (permanent) -------------------------------------------------
@@ -394,9 +442,35 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     synonyms: ['permanent address', 'स्थायी पता'],
     attributes: ['permanentaddress', 'permaddress'],
     inputTypes: ['textarea', 'text'],
+    // "Permanent Address" is also a section heading, with a whole block of fields under it.
+    ownTextOnly: true,
   },
 
   // --- identity ------------------------------------------------------------
+  {
+    customerField: 'customer.aadhaar',
+    synonyms: [
+      'aadhaar',
+      'aadhaar number',
+      'aadhaar no',
+      'aadhaar card',
+      'aadhaar card number',
+      'aadhar',
+      'aadhar number',
+      'aadhar no',
+      'aadhar card',
+      'uid',
+      'uidai',
+      'आधार',
+      'आधार संख्या',
+      'आधार नंबर',
+      'आधार कार्ड',
+    ],
+    attributes: ['aadhaar', 'aadhaarno', 'aadhaarnumber', 'aadhar', 'aadharno', 'uid'],
+    negative: ['last 4', 'last four', 'upload', 'file'],
+    inputTypes: ['text', 'number', 'tel'],
+    transform: 'number.plain',
+  },
   {
     customerField: 'customer.aadhaar_last4',
     synonyms: [
@@ -492,10 +566,21 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
   },
   {
     customerField: 'customer.annual_income',
-    synonyms: ['annual income', 'family income', 'yearly income', 'वार्षिक आय', 'पारिवारिक आय'],
-    attributes: ['annualincome', 'familyincome', 'income'],
-    negative: ['certificate no', 'certificate number'],
+    synonyms: [
+      'annual income',
+      'family income',
+      'yearly income',
+      'total income',
+      'वार्षिक आय',
+      'पारिवारिक आय',
+      // RTPS Bihar's income certificate form labels this "कुल आय (वार्षिक)".
+      'कुल आय',
+    ],
+    attributes: ['annualincome', 'familyincome', 'totalincome', 'income'],
+    negative: ['certificate no', 'certificate number', 'source', 'स्रोत'],
     inputTypes: ['text', 'number'],
+    // Portals reject "1,20,000"; the profile stores it however the operator typed it.
+    transform: 'number.plain',
   },
 
   // --- banking -------------------------------------------------------------

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adapterDependencyDepth,
+  adapterFieldMatchScore,
   adapterFieldMatches,
+  findAdapterField,
   adapterMatchesUrl,
   selectAdapter,
   urlPatternToRegExp,
@@ -132,5 +135,174 @@ describe('adapterFieldMatches', () => {
         field,
       ),
     ).toBe(false);
+  });
+});
+
+describe('adapterFieldMatchScore — negative patterns', () => {
+  const applicantName = {
+    key: 'applicant_name',
+    customerField: 'customer.full_name',
+    inputType: 'text',
+    labelPatterns: ['नाम'],
+    negativePatterns: ['पिता', 'माता'],
+  };
+
+  it('rejects a field a negative pattern disqualifies, even when a positive one matches', () => {
+    expect(
+      adapterFieldMatchScore(applicantName, {
+        signature: 'sig',
+        name: 'attr_1005',
+        id: 'attr_1005',
+        labelText: 'पिता का नाम / Name of Father',
+      }),
+    ).toBeNull();
+  });
+
+  it('still claims the field the pattern was written for', () => {
+    expect(
+      adapterFieldMatchScore(applicantName, {
+        signature: 'sig',
+        name: 'attr_1003',
+        id: 'attr_1003',
+        labelText: 'आवेदक का नाम / Name of Applicant',
+      }),
+    ).not.toBeNull();
+  });
+
+  it('looks at the placeholder and aria-label too', () => {
+    expect(
+      adapterFieldMatchScore(
+        {
+          key: 'dob',
+          customerField: 'customer.date_of_birth',
+          inputType: 'text',
+          labelPatterns: ['date of birth'],
+        },
+        {
+          signature: 'sig',
+          name: null,
+          id: null,
+          labelText: null,
+          ariaLabel: 'Date of Birth',
+        },
+      ),
+    ).not.toBeNull();
+  });
+
+  it('does not let the key substring-match a label', () => {
+    /*
+     * The old behaviour matched the adapter key against the label text as a loose substring, so
+     * a key of "name" claimed "पिता का नाम". The key is an attribute-space identifier; it now
+     * only matches name/id, and only as a whole token.
+     */
+    expect(
+      adapterFieldMatchScore(
+        { key: 'name', customerField: 'customer.full_name', inputType: 'text' },
+        { signature: 'sig', name: 'attr_1005', id: 'attr_1005', labelText: "Father's Name" },
+      ),
+    ).toBeNull();
+  });
+
+  it('matches a key against name/id across naming conventions', () => {
+    for (const attribute of ['applicant_name', 'applicantName', 'applicant-name']) {
+      expect(
+        adapterFieldMatchScore(
+          { key: 'applicant_name', customerField: 'customer.full_name', inputType: 'text' },
+          { signature: 'sig', name: attribute, id: null, labelText: null },
+        ),
+        attribute,
+      ).not.toBeNull();
+    }
+  });
+});
+
+describe('findAdapterField — longest match wins', () => {
+  const fields = [
+    {
+      key: 'district',
+      customerField: 'customer.address.district',
+      inputType: 'select-one',
+      labelPatterns: ['जिला'],
+    },
+    {
+      key: 'permanent_district',
+      customerField: 'customer.permanent_address.district',
+      inputType: 'select-one',
+      labelPatterns: ['स्थायी जिला'],
+    },
+  ];
+
+  it('prefers the more specific pattern regardless of array order', () => {
+    const field = {
+      signature: 'sig',
+      name: 'attr_9',
+      id: 'attr_9',
+      labelText: 'स्थायी जिला / Permanent District',
+    };
+
+    expect(findAdapterField({ fields }, field)?.key).toBe('permanent_district');
+    expect(findAdapterField({ fields: [...fields].reverse() }, field)?.key).toBe(
+      'permanent_district',
+    );
+  });
+
+  it('returns null when nothing claims the field', () => {
+    expect(
+      findAdapterField(
+        { fields },
+        { signature: 'sig', name: 'captchaCode', id: 'captchaCode', labelText: 'Enter captcha' },
+      ),
+    ).toBeNull();
+  });
+});
+
+describe('adapterDependencyDepth', () => {
+  it('counts the chain', () => {
+    const depths = adapterDependencyDepth({
+      fields: [
+        {
+          key: 'block',
+          customerField: 'customer.address.block',
+          inputType: 'select-one',
+          dependsOn: 'district',
+        },
+        { key: 'state', customerField: 'customer.address.state', inputType: 'select-one' },
+        {
+          key: 'district',
+          customerField: 'customer.address.district',
+          inputType: 'select-one',
+          dependsOn: 'state',
+        },
+      ],
+    });
+
+    expect(depths.get('state')).toBe(0);
+    expect(depths.get('district')).toBe(1);
+    expect(depths.get('block')).toBe(2);
+  });
+
+  it('treats a dangling parent as no dependency rather than throwing', () => {
+    const depths = adapterDependencyDepth({
+      fields: [
+        {
+          key: 'block',
+          customerField: 'customer.address.block',
+          inputType: 'select-one',
+          dependsOn: 'missing',
+        },
+      ],
+    });
+    expect(depths.get('block')).toBe(0);
+  });
+
+  it('survives a cycle, because a broken adapter must still fill the rest of the form', () => {
+    const depths = adapterDependencyDepth({
+      fields: [
+        { key: 'a', customerField: 'customer.address.state', inputType: 'text', dependsOn: 'b' },
+        { key: 'b', customerField: 'customer.address.district', inputType: 'text', dependsOn: 'a' },
+      ],
+    });
+    expect(depths.get('a')).toBeTypeOf('number');
+    expect(depths.get('b')).toBeTypeOf('number');
   });
 });

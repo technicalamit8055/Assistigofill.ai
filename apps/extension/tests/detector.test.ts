@@ -93,6 +93,113 @@ describe('detector — field discovery', () => {
     const [field] = detectFields(doc);
     expect(field).toMatchObject({ required: true, maxLength: 6, readOnly: true, disabled: true });
   });
+
+  it('detects custom ARIA controls, contenteditable elements, and datalists', () => {
+    const doc = render(`
+      <form>
+        <div contenteditable="true" id="bio" aria-label="Bio">Developer</div>
+        <div role="checkbox" aria-checked="true" aria-label="Subscribe"></div>
+        <div role="combobox" aria-label="Country">
+          <ul role="listbox">
+            <li role="option" data-value="IN">India</li>
+          </ul>
+        </div>
+        <input list="cities" name="city" type="text" />
+        <datalist id="cities">
+          <option value="DEL">Delhi</option>
+          <option value="PAT">Patna</option>
+        </datalist>
+        <input type="date" name="dob" />
+        <input type="range" name="score" />
+      </form>
+    `);
+
+    const fields = detectFields(doc);
+    expect(fields.map((f) => f.inputType)).toEqual([
+      'contenteditable',
+      'checkbox',
+      'combobox',
+      'text',
+      'date',
+      'range',
+    ]);
+
+    const combobox = fields.find((f) => f.inputType === 'combobox');
+    expect(combobox?.options).toEqual([{ value: 'IN', label: 'India' }]);
+
+    const cityInput = fields.find((f) => f.name === 'city');
+    expect(cityInput?.options).toEqual([
+      { value: 'DEL', label: 'Delhi' },
+      { value: 'PAT', label: 'Patna' },
+    ]);
+  });
+
+  it('does not mistake a browser default for something the operator already entered', () => {
+    // A slider reports its midpoint and a colour swatch reports #000000 whether or not anyone
+    // touched them. Counting those as filled would make both permanently unfillable.
+    const doc = render(`
+      <form>
+        <input type="range" name="untouched_range" />
+        <input type="range" name="preset_range" value="30" />
+        <input type="color" name="untouched_colour" />
+        <input type="color" name="preset_colour" value="#ff0000" />
+        <div role="slider" id="custom_slider" aria-label="Level" aria-valuenow="40"></div>
+      </form>
+    `);
+
+    const byName = new Map(detectFields(doc).map((f) => [f.name ?? f.id, f.hasValue]));
+    expect(Object.fromEntries(byName)).toEqual({
+      untouched_range: false,
+      preset_range: true,
+      untouched_colour: false,
+      preset_colour: true,
+      custom_slider: false,
+    });
+  });
+
+  it('treats an untouched multi-select as empty', () => {
+    const doc = render(`
+      <form>
+        <select name="empty" multiple><option value="a">A</option><option value="b">B</option></select>
+        <select name="chosen" multiple><option value="a" selected>A</option><option value="b">B</option></select>
+      </form>
+    `);
+
+    const fields = detectFields(doc);
+    expect(fields.map((f) => f.inputType)).toEqual(['select-multiple', 'select-multiple']);
+    expect(fields.map((f) => f.hasValue)).toEqual([false, true]);
+  });
+
+  it('collects the options of a dropdown that keeps them in a popup it points at', () => {
+    const doc = render(`
+      <form>
+        <div role="combobox" id="scheme" aria-label="Scheme" aria-controls="scheme-list"></div>
+        <div id="scheme-list">
+          <span data-option="A">Scheme A</span>
+          <span data-option="B">Scheme B</span>
+        </div>
+      </form>
+    `);
+
+    const combobox = detectFields(doc).find((f) => f.id === 'scheme');
+    expect(combobox?.options).toEqual([
+      { value: 'A', label: 'Scheme A' },
+      { value: 'B', label: 'Scheme B' },
+    ]);
+  });
+
+  it('lists an option once when the popup it points at is also a descendant', () => {
+    const doc = render(`
+      <form>
+        <div role="combobox" id="state" aria-label="State" aria-controls="state-list">
+          <ul id="state-list" role="listbox"><li role="option" data-value="BR">Bihar</li></ul>
+        </div>
+      </form>
+    `);
+
+    const combobox = detectFields(doc).find((f) => f.id === 'state');
+    expect(combobox?.options).toEqual([{ value: 'BR', label: 'Bihar' }]);
+  });
 });
 
 describe('detector — label resolution', () => {

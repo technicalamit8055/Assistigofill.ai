@@ -65,6 +65,16 @@ async function activeTabId(): Promise<number | null> {
 }
 
 /**
+ * Which tab a message is about.
+ *
+ * The sender's own tab comes first, falling back to whichever tab is active. A message from the
+ * side panel or the popup carries no `sender.tab`, so the fallback is what resolves those.
+ */
+async function targetTabId(sender?: chrome.runtime.MessageSender): Promise<number | null> {
+  return sender?.tab?.id ?? (await activeTabId());
+}
+
+/**
  * Injects the content script on demand.
  *
  * `activeTab` grants access only after a user gesture, which is why the extension asks for no
@@ -79,7 +89,7 @@ async function ensureContentScript(tabId: number): Promise<boolean> {
   }
 
   try {
-    await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
     return true;
   } catch {
     return false;
@@ -203,7 +213,7 @@ chrome.runtime.onMessageExternal.addListener((raw, sender, sendResponse) => {
 // Message routing
 // ---------------------------------------------------------------------------
 
-async function route(message: Message): Promise<unknown> {
+async function route(message: Message, sender?: chrome.runtime.MessageSender): Promise<unknown> {
   switch (message.type) {
     case 'PING':
       return ok({ alive: true });
@@ -238,10 +248,58 @@ async function route(message: Message): Promise<unknown> {
     }
 
     case 'DETECT_FIELDS': {
-      const tabId = await activeTabId();
+      const tabId = await targetTabId(sender);
       if (tabId === null) return fail('no_active_tab');
 
-      const detection = await sendToTab<DetectionPayload>(tabId, { type: 'DETECT_FIELDS' });
+      const injected = await ensureContentScript(tabId);
+      if (!injected) return fail('detection_failed');
+
+      let detection = await sendToTab<DetectionPayload>(tabId, { type: 'DETECT_FIELDS' });
+
+      // Aggregate fields from all subframes if available
+      try {
+        if (chrome.webNavigation?.getAllFrames) {
+          const frames = await chrome.webNavigation.getAllFrames({ tabId });
+          if (frames && frames.length > 1) {
+            const allFields: DetectionPayload['fields'] = detection?.fields ? [...detection.fields] : [];
+            let mainPageContext = detection?.page;
+
+            for (const frame of frames) {
+              if (frame.frameId === 0) continue;
+              try {
+                const response = (await chrome.tabs.sendMessage(
+                  tabId,
+                  { type: 'DETECT_FIELDS' },
+                  { frameId: frame.frameId },
+                )) as { ok: true; data: DetectionPayload } | undefined;
+                if (response?.ok && response.data) {
+                  if (!mainPageContext || (!mainPageContext.title && response.data.page.title)) {
+                    mainPageContext = response.data.page;
+                  }
+                  const subFields = response.data.fields.map((f, idx) => ({
+                    ...f,
+                    frame: frame.frameId,
+                    order: allFields.length + idx,
+                  }));
+                  allFields.push(...subFields);
+                }
+              } catch {
+                // Subframe unreadable or script not loaded
+              }
+            }
+
+            if (allFields.length > 0 || mainPageContext) {
+              detection = {
+                page: mainPageContext ?? { origin: '', path: '', title: null, blockedFrames: 0 },
+                fields: allFields,
+              };
+            }
+          }
+        }
+      } catch {
+        // Fallback to top frame detection
+      }
+
       if (!detection) return fail('detection_failed');
 
       stateFor(tabId).detection = detection;
@@ -249,7 +307,7 @@ async function route(message: Message): Promise<unknown> {
     }
 
     case 'REQUEST_MAPPING': {
-      const tabId = await activeTabId();
+      const tabId = await targetTabId(sender);
       if (tabId === null) return fail('no_active_tab');
 
       const state = stateFor(tabId);
@@ -260,6 +318,8 @@ async function route(message: Message): Promise<unknown> {
       const proposal = await apiFetch<{
         fillSessionId: string;
         mappings: FieldMapping[];
+        /** Signatures in dependency order; the side panel fills in this order. */
+        fillOrder: string[];
         summary: Record<string, number>;
         values: Record<string, string>;
       }>('/api/forms/map', {
@@ -273,11 +333,43 @@ async function route(message: Message): Promise<unknown> {
     }
 
     case 'APPLY_FILL': {
-      const tabId = await activeTabId();
+      const tabId = await targetTabId(sender);
       if (tabId === null) return fail('no_active_tab');
 
       const state = stateFor(tabId);
       const response = await sendToTab<{ results: FillResult[] }>(tabId, message);
+
+      // If elements were in subframes and top-frame missed them, attempt fill across subframes
+      if (response && response.results) {
+        const missingSignatures = response.results
+          .filter((r) => r.action === 'failed' && r.error === 'element_not_found')
+          .map((r) => r.signature);
+
+        if (missingSignatures.length > 0 && chrome.webNavigation?.getAllFrames) {
+          try {
+            const frames = await chrome.webNavigation.getAllFrames({ tabId });
+            if (frames) {
+              for (const frame of frames) {
+                if (frame.frameId === 0) continue;
+                const subResponse = (await chrome.tabs
+                  .sendMessage(tabId, message, { frameId: frame.frameId })
+                  .catch(() => null)) as { ok: true; data: { results: FillResult[] } } | null;
+                if (subResponse?.ok && subResponse.data.results) {
+                  for (const subRes of subResponse.data.results) {
+                    if (subRes.action === 'filled' || subRes.error !== 'element_not_found') {
+                      const idx = response.results.findIndex((r) => r.signature === subRes.signature);
+                      if (idx >= 0) response.results[idx] = subRes;
+                    }
+                  }
+                }
+              }
+            }
+          } catch {
+            // Ignore subframe execution errors
+          }
+        }
+      }
+
       if (!response) return fail('fill_failed');
 
       // Record the session. A logging failure must not lose the operator's work, so it is
@@ -297,7 +389,7 @@ async function route(message: Message): Promise<unknown> {
     }
 
     case 'REPORT_FORM': {
-      const tabId = await activeTabId();
+      const tabId = await targetTabId(sender);
       const state = tabId === null ? null : stateFor(tabId);
       if (!state?.detection) return fail('no_detection');
 
@@ -325,7 +417,7 @@ async function route(message: Message): Promise<unknown> {
     }
 
     case 'CREATE_APPLICATION': {
-      const tabId = await activeTabId();
+      const tabId = await targetTabId(sender);
       const state = tabId === null ? null : stateFor(tabId);
       const customer = await selectedCustomerStore.get<CustomerSummary>();
       if (!customer) return fail('no_customer_selected');
@@ -358,7 +450,7 @@ chrome.runtime.onMessage.addListener((raw, sender, sendResponse) => {
     return undefined;
   }
 
-  route(message)
+  route(message, sender)
     .then(sendResponse)
     .catch((error: unknown) => {
       const messageKey = error instanceof ApiError ? error.messageKey : 'errors.internal';

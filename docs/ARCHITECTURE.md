@@ -119,8 +119,9 @@ in `docs/SECURITY.md`.
 
 ```text
 popup/          Quick status, customer selector, "Detect fields"
-sidepanel/      Rich review table, confidence, edit/skip, Fill button
-content/        Field detection, safe fill application, floating launcher
+review/         Rich review table, confidence, edit/skip, Fill button
+sidepanel/      Mounts review/ReviewPanel in Chrome's side panel
+content/        Field detection, safe fill application
 background/     Service worker: auth, message routing, API calls (no DOM)
 shared/         Message schemas (Zod), API client, storage helpers, types
 ```

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="utf-8" />
+    <title>आय प्रमाण पत्र का निर्गमन — RTPS Bihar (test fixture)</title>
+  </head>
+  <body>
+    <!--
+      Structural approximation of the RTPS Bihar (ServicePlus) income-certificate form, written
+      for tests. Not a copy of the portal: no portal markup, styling, script or asset is
+      reproduced, and nothing here is served to a user.
+
+      What it does reproduce, because these are the things that break form filling:
+        - the table layout that puts a label in the cell before its input,
+        - bilingual labels where the Hindi ones nest ("नाम" inside "पिता का नाम"),
+        - generated name/id attributes, so matching has to work off labels,
+        - a dependent dropdown chain that starts out unpopulated,
+        - a CAPTCHA and an OTP field next to ordinary ones.
+
+      Every value is invented. No real citizen's details appear here (docs/DATABASE.md §7).
+    -->
+    <h1>आय प्रमाण पत्र का निर्गमन / Issuance of Income Certificate</h1>
+
+    <form id="dynamicForm" action="/renderApplicationForm.do" method="post">
+      <fieldset>
+        <legend>आवेदक का विवरण / Applicant Details</legend>
+        <table>
+          <tbody>
+            <tr>
+              <td>सेवा का प्रकार / Service Type <span>*</span></td>
+              <td>
+                <select name="attr_1001" id="attr_1001">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="GEN">सामान्य / General</option>
+                  <option value="TAT">तत्काल / Tatkal</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>अभिवादन / Salutation <span>*</span></td>
+              <td>
+                <select name="attr_1002" id="attr_1002">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="MR">श्री / Mr.</option>
+                  <option value="MRS">श्रीमती / Mrs.</option>
+                  <option value="MISS">कुमारी / Miss</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>आवेदक का नाम / Name of Applicant <span>*</span></td>
+              <td><input type="text" name="attr_1003" id="attr_1003" maxlength="100" /></td>
+            </tr>
+            <tr>
+              <td>आवेदक का नाम (हिंदी में) / Name of Applicant in Hindi</td>
+              <td><input type="text" name="attr_1004" id="attr_1004" maxlength="100" /></td>
+            </tr>
+            <tr>
+              <td>पिता का नाम / Name of Father <span>*</span></td>
+              <td><input type="text" name="attr_1005" id="attr_1005" maxlength="100" /></td>
+            </tr>
+            <tr>
+              <td>माता का नाम / Name of Mother</td>
+              <td><input type="text" name="attr_1006" id="attr_1006" maxlength="100" /></td>
+            </tr>
+            <tr>
+              <td>पति का नाम / Name of Husband</td>
+              <td><input type="text" name="attr_1007" id="attr_1007" maxlength="100" /></td>
+            </tr>
+            <tr>
+              <td>लिंग / Gender <span>*</span></td>
+              <td>
+                <select name="attr_1008" id="attr_1008">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="1">पुरुष / Male</option>
+                  <option value="2">महिला / Female</option>
+                  <option value="3">तृतीय लिंग / Third Gender</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>जन्म तिथि / Date of Birth</td>
+              <td>
+                <input type="text" name="attr_1009" id="attr_1009" placeholder="dd/mm/yyyy" />
+              </td>
+            </tr>
+            <tr>
+              <td>पेशा / Profession</td>
+              <td>
+                <select name="attr_1010" id="attr_1010">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="AGR">कृषि / Agriculture</option>
+                  <option value="SER">सेवा / Service</option>
+                  <option value="BUS">व्यवसाय / Business</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>आवेदक का मोबाइल संख्या / Mobile No. of Applicant <span>*</span></td>
+              <td><input type="text" name="attr_1011" id="attr_1011" maxlength="10" /></td>
+            </tr>
+            <tr>
+              <td>आवेदक का ईमेल / Email of Applicant</td>
+              <td><input type="text" name="attr_1012" id="attr_1012" maxlength="60" /></td>
+            </tr>
+            <tr>
+              <td>आधार संख्या / Aadhaar Number</td>
+              <td><input type="text" name="attr_1013" id="attr_1013" maxlength="12" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>वर्तमान पता / Present Address</legend>
+        <table>
+          <tbody>
+            <tr>
+              <td>ग्राम (Village) / मोहल्ला (Town) <span>*</span></td>
+              <td><input type="text" name="attr_2001" id="attr_2001" maxlength="60" /></td>
+            </tr>
+            <tr>
+              <td>डाक घर / Post office <span>*</span></td>
+              <td><input type="text" name="attr_2002" id="attr_2002" maxlength="60" /></td>
+            </tr>
+            <tr>
+              <td>राज्य / State <span>*</span></td>
+              <td>
+                <select name="attr_2003" id="attr_2003">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="10">बिहार / BIHAR</option>
+                  <option value="09">उत्तर प्रदेश / UTTAR PRADESH</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>जिला / District <span>*</span></td>
+              <td>
+                <select name="attr_2004" id="attr_2004">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="1006">पटना / PATNA</option>
+                  <option value="1012">गया / GAYA</option>
+                  <option value="1021">मुजफ्फरपुर / MUZAFFARPUR</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>अनुमंडल / Sub-Division <span>*</span></td>
+              <td>
+                <!-- Repopulates over AJAX once a district is chosen. -->
+                <select name="attr_2005" id="attr_2005">
+                  <option value="">-- चयन करें / Select --</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>प्रखंड / Block <span>*</span></td>
+              <td>
+                <select name="attr_2006" id="attr_2006">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="100601">दानापुर / DANAPUR</option>
+                  <option value="100602">फुलवारी / PHULWARI</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>थाना / Police Station</td>
+              <td>
+                <select name="attr_2007" id="attr_2007">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="PS01">दानापुर / DANAPUR</option>
+                  <option value="PS02">खगौल / KHAGAUL</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>स्थानीय निकाय का प्रकार / Local Body Type</td>
+              <td>
+                <select name="attr_2008" id="attr_2008">
+                  <option value="">-- चयन करें / Select --</option>
+                  <option value="GP">ग्राम पंचायत / Gram Panchayat</option>
+                  <option value="NP">नगर पंचायत / Nagar Panchayat</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>वार्ड संख्या / Ward Number</td>
+              <td><input type="text" name="attr_2009" id="attr_2009" maxlength="4" /></td>
+            </tr>
+            <tr>
+              <td>पिन कोड / PIN Code <span>*</span></td>
+              <td><input type="text" name="attr_2010" id="attr_2010" maxlength="6" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>आय का विवरण / Income Details</legend>
+        <table>
+          <tbody>
+            <tr>
+              <td>कुल आय (वार्षिक) / Total income (Annual) <span>*</span></td>
+              <td><input type="text" name="attr_3001" id="attr_3001" maxlength="12" /></td>
+            </tr>
+            <tr>
+              <td>आय का स्रोत / Source of income</td>
+              <td>
+                <label
+                  ><input type="checkbox" name="attr_3002" value="AGR" /> कृषि / Agriculture</label
+                >
+                <label
+                  ><input type="checkbox" name="attr_3003" value="BUS" /> व्यवसाय / Business</label
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>सत्यापन / Verification</legend>
+        <table>
+          <tbody>
+            <tr>
+              <td>
+                <label for="captchaCode"
+                  >कैप्चा कोड दर्ज करें / Please enter the characters shown above</label
+                >
+              </td>
+              <td>
+                <img src="/captcha.jpg" alt="captcha" />
+                <input type="text" name="captchaCode" id="captchaCode" maxlength="6" />
+              </td>
+            </tr>
+            <tr>
+              <td><label for="otpValue">ओटीपी दर्ज करें / Enter OTP</label></td>
+              <td><input type="text" name="otpValue" id="otpValue" maxlength="6" /></td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+
+      <button type="submit" id="submitBtn" name="submitBtn">आगे बढ़ें / Proceed</button>
+      <input type="reset" value="रीसेट / Reset" />
+    </form>
+  </body>
+</html>

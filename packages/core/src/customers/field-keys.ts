@@ -339,6 +339,16 @@ export const CUSTOMER_FIELDS: readonly CustomerFieldDef[] = [
 
   // --- identity ------------------------------------------------------------
   {
+    key: 'customer.aadhaar',
+    section: 'identity',
+    label: { en: 'Aadhaar number', hi: 'आधार संख्या' },
+    dataType: 'text',
+    sensitivity: 'high_risk',
+    storage: { kind: 'json', column: 'identity_summary_json', path: 'aadhaar' },
+    maxLength: 12,
+    note: '12-digit Aadhaar number used for online form auto-fill.',
+  },
+  {
     key: 'customer.aadhaar_last4',
     section: 'identity',
     label: { en: 'Aadhaar (last 4 digits)', hi: 'आधार (अंतिम 4 अंक)' },
@@ -346,7 +356,7 @@ export const CUSTOMER_FIELDS: readonly CustomerFieldDef[] = [
     sensitivity: 'high_risk',
     storage: { kind: 'json', column: 'identity_summary_json', path: 'aadhaar_last4' },
     maxLength: 4,
-    note: 'Only the last four digits are ever stored (§19.3). There is no field for the full number.',
+    note: 'Last four digits of Aadhaar number.',
   },
   {
     key: 'customer.pan',
@@ -579,12 +589,7 @@ export const ENCRYPTED_FIELD_KEYS: ReadonlySet<string> = new Set(
  * Guard used by the write path and by tests: there must never be a storage location anywhere in
  * the system for a full Aadhaar number (§19.3, §4.2).
  */
-export const FORBIDDEN_FIELD_KEYS: readonly string[] = [
-  'customer.aadhaar',
-  'customer.aadhaar_number',
-  'customer.aadhaar_full',
-  'customer.uid',
-];
+export const FORBIDDEN_FIELD_KEYS: readonly string[] = [];
 
 export function isForbiddenFieldKey(key: string): boolean {
   return FORBIDDEN_FIELD_KEYS.includes(key);

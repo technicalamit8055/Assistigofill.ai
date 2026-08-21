@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildFillInstructions, proposeMappings, type MappingInput } from './mapper';
+import {
+  buildFillInstructions,
+  proposeMappings,
+  resolveFillValue,
+  type MappingInput,
+} from './mapper';
 import type { DetectedField, DetectionPayload } from './types';
 import type { PortalAdapter } from './adapters';
 
@@ -338,5 +343,76 @@ describe('buildFillInstructions', () => {
 
     const instructions = buildFillInstructions(tampered, CUSTOMER, new Set(['cap']), fields);
     expect(instructions).toHaveLength(0);
+  });
+});
+
+describe('resolveFillValue', () => {
+  const mapping = {
+    signature: 'dob',
+    customerField: 'customer.date_of_birth',
+    transform: 'date.ddmmyyyy',
+  };
+
+  it('applies the named transform', () => {
+    expect(resolveFillValue(mapping, CUSTOMER)).toBe('03/04/1990');
+  });
+
+  it('takes an operator edit literally, without re-formatting it', () => {
+    /*
+     * The operator looked at the field and typed what the portal should receive. Running
+     * date.ddmmyyyy over "1 April 1990" would either mangle it or return null, and either way
+     * the tool would be overruling the human it just asked to check.
+     */
+    expect(resolveFillValue(mapping, CUSTOMER, { dob: '1 April 1990' })).toBe('1 April 1990');
+  });
+
+  it('treats an emptied edit as "do not fill", not as "fall back to the proposal"', () => {
+    expect(resolveFillValue(mapping, CUSTOMER, { dob: '' })).toBeNull();
+  });
+
+  it('returns null when the customer has no value', () => {
+    expect(resolveFillValue({ signature: 'x', customerField: 'customer.pan' }, {})).toBeNull();
+  });
+});
+
+describe('buildFillInstructions — edits and ordering', () => {
+  const fields = [
+    field({ signature: 'name', labelText: "Applicant's Name", name: 'applicant_name' }),
+    field({ signature: 'dob', labelText: 'Date of Birth', name: 'dob' }),
+  ];
+
+  it('lets an operator edit override the proposed value', () => {
+    const { mappings } = propose(fields);
+    const instructions = buildFillInstructions(mappings, CUSTOMER, new Set(['name']), fields, {
+      edits: { name: 'Corrected Name' },
+    });
+
+    expect(instructions[0]?.value).toBe('Corrected Name');
+  });
+
+  it('honours an explicit order list', () => {
+    const { mappings } = propose(fields);
+    const instructions = buildFillInstructions(
+      mappings,
+      CUSTOMER,
+      new Set(['name', 'dob']),
+      fields,
+      { order: ['dob', 'name'] },
+    );
+
+    expect(instructions.map((instruction) => instruction.signature)).toEqual(['dob', 'name']);
+  });
+
+  it('keeps a signature the order list forgot rather than dropping it', () => {
+    const { mappings } = propose(fields);
+    const instructions = buildFillInstructions(
+      mappings,
+      CUSTOMER,
+      new Set(['name', 'dob']),
+      fields,
+      { order: ['dob'] },
+    );
+
+    expect(instructions.map((instruction) => instruction.signature)).toEqual(['dob', 'name']);
   });
 });

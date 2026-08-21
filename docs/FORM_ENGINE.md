@@ -76,8 +76,20 @@ The dictionary matcher scores each candidate customer field:
 | exact match on aria-label / placeholder              | 0.90                           |
 | token-subset match on label                          | 0.80                           |
 | match on nearby text                                 | 0.65                           |
+| match on section heading                             | 0.55                           |
 | input-type compatibility                             | ×0.5 penalty when incompatible |
 | negative-keyword hit (e.g. "father" for `full_name`) | reject                         |
+
+Nearby text and the section heading are the two signals that read text the field does not own, and
+both are traps for container words. An entry can set `ownTextOnly: true` to opt out of them — set
+on the printed-address entries, because "Address" is also a section heading with a block of
+unrelated fields beneath it, and without it every dropdown in a "Present Address" fieldset was
+proposed as the printed-address blob.
+
+A related detector rule: a `<select>`'s `nearbyText` excludes its own `<option>` text. The options
+are the field's possible _values_ and travel separately; left in the nearby text they read as part
+of the field's name, which is how a "स्थानीय निकाय का प्रकार" dropdown came to claim the panchayat
+mapping off the back of a "ग्राम पंचायत" option.
 
 Confidence bands (§14.6):
 
@@ -125,20 +137,76 @@ type PortalAdapter = {
 };
 
 type AdapterField = {
-  key: string; // adapter-local id
+  key: string; // adapter-local id; matched as a whole token against name/id
   customerField: string; // customer.full_name
   selector?: string; // CSS selector, preferred when stable
   labelPatterns?: string[]; // fallback when selectors drift
+  negativePatterns?: string[]; // disqualifiers; outrank every positive signal
   inputType: string;
   transform?: string; // named transform, see §7
   required?: boolean;
   reviewRequired?: boolean;
+  dependsOn?: string; // adapter key that must be filled first
 };
 ```
 
 Adapters are data, not code — stored in `portal_adapters` and seeded from
 `packages/form-engine/src/adapters/*.json`. A selector that no longer matches degrades to
 `labelPatterns`, then to dictionary mapping, and raises an adapter-health warning.
+
+`packages/form-engine/src/adapter-registry.ts` parses those JSON files at import and exports them
+as `BUILT_IN_ADAPTERS`. `POST /api/forms/map` merges them under the database rows by slug
+(`mergeAdapters`), so a deployment whose seed has not run still maps supported portals, and a
+corrected row in `portal_adapters` still wins. Publish them with
+`npm run db:seed:adapters` (add `-- --confirm-remote` for a non-local project). A built-in that is
+not yet a row still maps the form; it just cannot be named in `fill_sessions.portal_adapter_id`,
+which is a foreign key.
+
+### Matching
+
+`findAdapterField` picks the **highest-scoring** adapter field, not the first one that matches.
+This matters on a Hindi form, where labels nest — `नाम` is a substring of `पिता का नाम`, so
+first-match-wins would hand the applicant's name field to whichever entry happened to be written
+earlier in the JSON. Scores, highest first: a selector baked into the signature, the `key` as a
+whole token in `name`/`id`, then the longest matching `labelPattern`.
+
+`negativePatterns` disqualifies a field outright and outranks every positive signal. An adapter
+matches against `name`, `id`, `labelText`, `placeholder` and `ariaLabel` — never `nearbyText`,
+because an adapter match is treated as near-certain and may only look at text that belongs to the
+one control.
+
+### Fill order
+
+`dependsOn` names the adapter field that must be written first. `proposeMappings` turns the chain
+into `MappingProposal.fillOrder`, which the API returns and the side panel passes to
+`buildFillInstructions`. Without it, dependent dropdowns worked only on portals whose DOM order
+happens to put the parent above the child.
+
+## 6a. Supported portals
+
+| Adapter slug               | Portal                                                 | Forms                                   | Status  |
+| -------------------------- | ------------------------------------------------------ | --------------------------------------- | ------- |
+| `bihar-rtps-serviceonline` | RTPS Bihar / ServicePlus, `serviceonline.bihar.gov.in` | Income, caste and residence certificate | testing |
+
+### RTPS Bihar
+
+One adapter covers all three certificate services, because the only thing that distinguishes them
+is `?serviceId=463/464/465` and §14.2 forbids transmitting the query string. Per-field
+`labelPatterns` do the selecting instead: the annual-income field simply does not match on a caste
+form.
+
+Matching is label-driven with no selectors. ServicePlus generates its `name`/`id` attributes
+(`attr_1003`), so a hand-written selector would be a guess that rots silently; the bilingual
+labels are the stable part.
+
+What the adapter deliberately does **not** fill, and why:
+
+| Field                                                  | Why                                                                                                                                                                                                                                     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| आधार संख्या / Aadhaar Number                           | The portal wants twelve digits. Only the last four are ever stored, so there is no correct value to type — the operator does it. Asserted by a test.                                                                                    |
+| अनुमंडल / Sub-Division                                 | No equivalent in the customer field registry. It also sits between district and block in the AJAX chain, so **प्रखंड / Block** is usually reported as `dependent_not_ready` until the operator picks the sub-division and re-runs Fill. |
+| जाति / Caste                                           | The registry holds a reservation _category_ (SC/ST/OBC), not a caste name. Filling one from the other would be a confident wrong answer.                                                                                                |
+| अभिवादन, सेवा का प्रकार, पेशा, स्थानीय निकाय का प्रकार | Portal-specific choices, not customer data.                                                                                                                                                                                             |
 
 ## 7. Transforms
 
@@ -168,6 +236,33 @@ never populates, the field is marked `skipped` with reason `dependent_not_ready`
 - File inputs: cannot be set programmatically for security reasons. The extension surfaces the
   matching prepared derivative and the operator picks the file (spec §7.4.5).
 - Every field produces a result row: `filled | skipped | edited | failed` plus a reason.
+
+### 9a. Field types the executor writes to
+
+Native controls (`text`, `email`, `tel`, `number`, `search`, `url`, `date`, `datetime-local`,
+`month`, `week`, `time`, `color`, `range`, `textarea`, `checkbox`, `radio`, `<select>`,
+`<select multiple>`), `[contenteditable]` rich text, and the ARIA roles a component library uses
+when it rebuilds a control out of divs (`combobox`, `listbox`, `select`, `checkbox`, `radio`,
+`switch`, `slider`, `spinbutton`, `textbox`). `password`, `file` and every submit-shaped control
+stay out, as do CAPTCHA, OTP and payment fields regardless of type (§5 above).
+
+Three rules follow from writing to widgets rather than plain text boxes:
+
+- **The value is formatted to what the control accepts, or the fill is refused.** A date, time,
+  month, week or colour is normalised first (`15/08/1995` → `1995-08-15`, `5:30 PM` → `17:30`,
+  `abcdef` → `#abcdef`) and a slider is clamped to its bounds. These types replace a value they
+  reject instead of clearing it, so a filled-looking field is not evidence of a successful write —
+  they are verified by exact comparison and reported `failed` otherwise.
+- **A browser default is not an operator's value.** A slider reports its midpoint and a colour
+  swatch reports `#000000` untouched, so for those two the detector asks whether the *page* set a
+  value rather than what the widget currently reads. Otherwise every slider and colour picker
+  would be permanently `already_filled`.
+- **A click target that was not vetted is not clicked.** Filling a custom dropdown or an ARIA
+  radio group means clicking an element the mapper never classified. Those are checked against
+  `isSubmitControl` on structure alone — a `<button>` with no `type` submits its form, so it is
+  refused; naming and label text are deliberately ignored, because an option legitimately reads
+  "I confirm the above". A custom dropdown with no matching option reports `skipped/no_value`
+  rather than claiming success.
 
 ## 10. Unsupported forms and reports (§9.6)
 

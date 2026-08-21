@@ -8,15 +8,15 @@ interface LogoProps {
 
 export function AssistigoLogo({
   className = '',
-  height = 64,
+  height = 80,
 }: LogoProps) {
   return (
     <div className={`flex items-center shrink-0 ${className}`}>
       <Image
-        src="/assistfill-logo.png"
-        alt="Assistigo.ai - Smart Assistance, Seamless Solutions."
-        width={360}
-        height={120}
+        src="/Bharatfill-logo.png"
+        alt="Bharatfill - Smart Assistance, Seamless Solutions."
+        width={480}
+        height={160}
         style={{ height: height, width: 'auto' }}
         className="object-contain object-left"
         priority

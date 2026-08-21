@@ -325,7 +325,7 @@ export function InteractiveDemo() {
                 <div>
                   {/* Extension Header with Official Assistigo Logo */}
                   <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                    <AssistigoLogo height={67} />
+                    <AssistigoLogo height={80} />
                     <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                       ON
                     </span>
