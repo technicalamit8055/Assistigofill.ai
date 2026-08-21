@@ -211,7 +211,6 @@ function fillAll(doc: Document) {
 }
 
 describe('bihar rtps — fill', () => {
-
   it('applies the named transforms the portal needs', async () => {
     const doc = loadFixture();
     const { instructions } = fillAll(doc);

@@ -35,9 +35,10 @@ Icons are generated from `Assests/assistfill-logo.png` into `apps/extension/publ
 | `sidepanel/`                   | mounts `review/ReviewPanel` in Chrome's side panel    | add chrome the browser provides     |
 | `shared/`                      | Zod message schemas, API client, storage helpers      | import DOM APIs                     |
 
-The review UI is the single surface, Chrome's side panel — a floating on-page overlay was tried
-and removed; see the roadmap for why. `review/ReviewPanel.tsx` renders a Disconnect button next to
-the organization/role row, so ending a session does not require reopening the popup.
+Chrome's side panel is the only review surface. `review/ReviewPanel.tsx` holds the UI and
+`sidepanel/` is a thin mount of it, so the panel can be re-hosted later without touching the
+review logic. It renders a Disconnect button next to the organization/role row, so ending a
+session does not require reopening the popup.
 
 ## 3. Auth
 
