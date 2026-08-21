@@ -254,6 +254,11 @@ export const LABEL_RULES: readonly LabelRule[] = [
     labels: ['district', 'जिला', 'जनपद'],
   },
   {
+    key: 'customer.address.sub_division',
+    kind: 'text',
+    labels: ['sub division', 'subdivision', 'sub-division', 'अनुमंडल', 'उपखंड', 'उप मंडल'],
+  },
+  {
     key: 'customer.address.state',
     kind: 'text',
     labels: ['state', 'राज्य'],
@@ -324,6 +329,11 @@ export const LABEL_RULES: readonly LabelRule[] = [
     key: 'customer.certificate.caste.issuing_authority',
     kind: 'text',
     labels: ['issuing authority', 'issued by', 'जारीकर्ता', 'जारीकर्ता प्राधिकरण'],
+  },
+  {
+    key: 'customer.certificate.caste.sub_caste',
+    kind: 'text',
+    labels: ['sub caste', 'subcaste', 'sub-caste', 'उप जाति', 'उपजाति', 'उप-जाति'],
   },
   {
     key: 'customer.certificate.residence.number',
@@ -494,6 +504,7 @@ const ADDRESS_FIELDS = [
   'customer.address.block',
   'customer.address.panchayat',
   'customer.address.district',
+  'customer.address.sub_division',
   'customer.address.state',
   'customer.address.pincode',
 ] as const;
@@ -538,6 +549,7 @@ export const FIELDS_BY_DOCUMENT_TYPE: Record<DocumentType, readonly string[]> = 
     'customer.certificate.caste.number',
     'customer.certificate.caste.issue_date',
     'customer.certificate.caste.issuing_authority',
+    'customer.certificate.caste.sub_caste',
   ],
   income_certificate: [
     'customer.full_name',

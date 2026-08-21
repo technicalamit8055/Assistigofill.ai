@@ -116,12 +116,13 @@ describe('bihar rtps adapter — policy', () => {
     }
   });
 
-  it('orders the address chain state → district → block → panchayat', () => {
+  it('orders the address chain state → district → sub_division → block → panchayat', () => {
     const depths = adapterDependencyDepth(adapter);
     expect(depths.get('state')).toBe(0);
     expect(depths.get('district')).toBe(1);
-    expect(depths.get('block')).toBe(2);
-    expect(depths.get('panchayat')).toBe(3);
+    expect(depths.get('sub_division')).toBe(2);
+    expect(depths.get('block')).toBe(3);
+    expect(depths.get('panchayat')).toBe(4);
   });
 
   it('is not marked active until it has been verified against the live portal', () => {

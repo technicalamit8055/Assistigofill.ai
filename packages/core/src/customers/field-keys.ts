@@ -130,6 +130,7 @@ const ADDRESS_PARTS: readonly AddressPart[] = [
   { suffix: 'block', label: { en: 'Block', hi: 'ब्लॉक' } },
   { suffix: 'police_station', label: { en: 'Police station', hi: 'थाना' } },
   { suffix: 'district', label: { en: 'District', hi: 'जिला' } },
+  { suffix: 'sub_division', label: { en: 'Sub-division', hi: 'अनुमंडल' } },
   { suffix: 'state', label: { en: 'State', hi: 'राज्य' } },
   { suffix: 'pincode', label: { en: 'PIN code', hi: 'पिन कोड' }, dataType: 'pincode' },
   { suffix: 'country', label: { en: 'Country', hi: 'देश' } },
@@ -400,6 +401,15 @@ export const CUSTOMER_FIELDS: readonly CustomerFieldDef[] = [
     sensitivity: 'sensitive',
     storage: { kind: 'encrypted' },
   },
+  {
+    key: 'customer.bpl_card_number',
+    section: 'identity',
+    label: { en: 'BPL card number', hi: 'बीपीएल कार्ड नंबर' },
+    dataType: 'text',
+    sensitivity: 'sensitive',
+    storage: { kind: 'encrypted' },
+    note: 'Below Poverty Line card number, used as proof for several scheme applications.',
+  },
 
   // --- education -----------------------------------------------------------
   ...(
@@ -475,6 +485,15 @@ export const CUSTOMER_FIELDS: readonly CustomerFieldDef[] = [
       storage: { kind: 'json', column: 'certificates_json', path: `${type}.${suffix}` },
     })),
   ),
+  {
+    key: 'customer.certificate.caste.sub_caste',
+    section: 'certificates',
+    label: { en: 'Sub-caste', hi: 'उप-जाति' },
+    dataType: 'text',
+    sensitivity: 'high_risk',
+    storage: { kind: 'json', column: 'certificates_json', path: 'caste.sub_caste' },
+    note: 'Always reviewed, like the reservation category it refines (§14.6).',
+  },
   {
     key: 'customer.annual_income',
     section: 'certificates',

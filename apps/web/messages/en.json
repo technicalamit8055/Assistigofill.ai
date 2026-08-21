@@ -170,6 +170,10 @@
     "auditEmpty": "No activity recorded yet.",
     "auditAction": "Action",
     "confirmDelete": "Delete this customer? This can be reversed by a manager.",
+    "editDetails": "Edit details",
+    "editHelp": "Change any field below and save. Leaving a field blank keeps its current value — it will not be cleared.",
+    "editKeepEncrypted": "Leave blank to keep the saved value",
+    "editSetEncrypted": "Leave blank if none, or type a value to save",
     "sections": {
       "personal": "Personal",
       "family": "Family",

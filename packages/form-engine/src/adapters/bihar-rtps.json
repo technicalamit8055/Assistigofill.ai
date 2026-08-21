@@ -11,7 +11,7 @@
   "version": "1.0.0",
   "status": "testing",
   "notes": "One adapter covers all three RTPS certificate services because the only thing that distinguishes them is the ?serviceId= query parameter, and detection deliberately never transmits query strings (spec 14.2). Per-field labelPatterns do the selecting instead: the annual-income field simply does not match on a caste form. Matching is label-driven on purpose — ServicePlus generates its input name/id attributes, so a hand-written selector would be a guess that silently rots. Labels below were read off the live portal.",
-  "knownIssues": "Aadhaar (आधार संख्या) is deliberately not mapped: the portal wants all twelve digits and Assistigo stores only the last four, so the operator types it. Caste (जाति) and sub-division (अनुमंडल) have no equivalent in the customer field registry and are left to the operator. Salutation (अभिवादन), service type (सेवा का प्रकार), local body type and profession (पेशा) are portal-specific choices, not customer data.",
+  "knownIssues": "Aadhaar (आधार संख्या) is deliberately not mapped: the portal wants all twelve digits and Assistigo stores only the last four, so the operator types it. Caste (जाति) has no equivalent in the customer field registry, which holds a reservation category (SC/ST/OBC) rather than a caste name — filling one from the other would be a confident wrong answer, so it is left to the operator. Salutation (अभिवादन), service type (सेवा का प्रकार), local body type and profession (पेशा) are portal-specific choices, not customer data.",
   "documentRequirements": [
     {
       "key": "photo",
@@ -171,11 +171,18 @@
       "dependsOn": "state"
     },
     {
+      "key": "sub_division",
+      "customerField": "customer.address.sub_division",
+      "labelPatterns": ["अनुमंडल", "sub division", "sub-division"],
+      "inputType": "select-one",
+      "dependsOn": "district"
+    },
+    {
       "key": "block",
       "customerField": "customer.address.block",
       "labelPatterns": ["प्रखंड", "block", "block / taluk", "taluk"],
       "inputType": "select-one",
-      "dependsOn": "district"
+      "dependsOn": "sub_division"
     },
     {
       "key": "panchayat",

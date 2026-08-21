@@ -737,6 +737,10 @@ input[type='checkbox'] {
   border-top-color: var(--accent);
 }
 
+.icon-spin {
+  animation: spin 0.7s linear infinite;
+}
+
 @keyframes pulseDot {
   0%,
   100% {

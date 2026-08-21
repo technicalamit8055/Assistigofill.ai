@@ -204,9 +204,10 @@ What the adapter deliberately does **not** fill, and why:
 | Field                                                  | Why                                                                                                                                                                                                                                     |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | आधार संख्या / Aadhaar Number                           | The portal wants twelve digits. Only the last four are ever stored, so there is no correct value to type — the operator does it. Asserted by a test.                                                                                    |
-| अनुमंडल / Sub-Division                                 | No equivalent in the customer field registry. It also sits between district and block in the AJAX chain, so **प्रखंड / Block** is usually reported as `dependent_not_ready` until the operator picks the sub-division and re-runs Fill. |
 | जाति / Caste                                           | The registry holds a reservation _category_ (SC/ST/OBC), not a caste name. Filling one from the other would be a confident wrong answer.                                                                                                |
 | अभिवादन, सेवा का प्रकार, पेशा, स्थानीय निकाय का प्रकार | Portal-specific choices, not customer data.                                                                                                                                                                                             |
+
+अनुमंडल / Sub-Division now maps to `customer.address.sub_division` and sits between district and block in both the registry and the adapter's `dependsOn` chain. **प्रखंड / Block** still reports `dependent_not_ready` until the operator picks the sub-division and re-runs Fill — that AJAX behaviour is the portal's, not a mapping gap.
 
 ## 7. Transforms
 
@@ -221,7 +222,7 @@ skipped rather than filled with a guess.
 
 ## 8. Dependent dropdowns
 
-State → district → block chains are filled sequentially: set the parent, dispatch `change`, wait
+State → district → sub-division → block chains are filled sequentially: set the parent, dispatch `change`, wait
 for the child's option list to change (bounded wait, ~1.5 s), then match the child. If the child
 never populates, the field is marked `skipped` with reason `dependent_not_ready` — never forced.
 

@@ -1,20 +1,14 @@
 import { notFound as nextNotFound } from 'next/navigation';
 import Link from 'next/link';
-import { Badge, Card, TBody, TD, TH, THead, TR, Table } from '@assistigo/ui';
-import {
-  CUSTOMER_FIELD_SECTIONS,
-  fieldsInSection,
-  formatIndianDate,
-  isSensitiveField,
-  type CustomerFieldSection,
-} from '@assistigo/core';
+import { Badge, TBody, TD, TH, THead, TR, Table, Card } from '@assistigo/ui';
+import { CUSTOMER_FIELD_SECTIONS, fieldsInSection, formatIndianDate, isSensitiveField } from '@assistigo/core';
 import { requirePagePermission } from '@/lib/auth/session';
 import { getTranslations } from '@/lib/i18n/server';
 import { localised } from '@/lib/i18n';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { customerValuesFromRow } from '@/lib/customers/values';
 import type { AuditLogRow, CustomerRow } from '@/lib/supabase/database.types';
-import { CustomerProfileField } from './customer-profile-field';
+import { CustomerProfileSections, type ProfileSection } from './profile-sections';
 import { CustomerDocuments } from './customer-documents';
 import { AddProfileInfo } from './add-profile-info';
 import { DeleteCustomerButton } from './delete-customer-button';
@@ -70,6 +64,32 @@ export default async function CustomerProfilePage({ params }: { params: Promise<
   const canUploadDocument = session.permissions.has('document.upload');
   const auditLogs = (auditRows ?? []) as AuditLogRow[];
 
+  // The full Aadhaar number is deliberately left out of the editable field set: storing it in
+  // full requires legal review and an org-level opt-in the app has no UI for yet (docs/
+  // DEVELOPMENT_RULES.md §1 rule 5), so this page only ever exposes `customer.aadhaar_last4`.
+  const sectionsData: ProfileSection[] = CUSTOMER_FIELD_SECTIONS.map((section) => ({
+    section,
+    title: t(`customers.sections.${section}`),
+    fields: fieldsInSection(section)
+      .filter((field) => field.storage.kind !== 'derived' && field.key !== 'customer.aadhaar')
+      .map((field) => ({
+        key: field.key,
+        label: localised(field.label, locale),
+        dataType: field.dataType,
+        value: values[field.key] ?? null,
+        sensitive: isSensitiveField(field.key),
+        encrypted: field.storage.kind === 'encrypted',
+        hasEncryptedValue: encryptedFieldsPresent.has(field.key),
+        maxLength: field.maxLength ?? null,
+        options: field.options
+          ? field.options.map((option) => ({
+              value: option.value,
+              label: localised(option.label, locale),
+            }))
+          : null,
+      })),
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -83,40 +103,12 @@ export default async function CustomerProfilePage({ params }: { params: Promise<
         </div>
       </div>
 
-      {CUSTOMER_FIELD_SECTIONS.map((section: CustomerFieldSection) => {
-        const fields = fieldsInSection(section).filter(
-          (field) => field.storage.kind !== 'derived' || values[field.key] !== undefined,
-        );
-        const hasAnyValue = fields.some(
-          (field) => values[field.key] !== undefined || encryptedFieldsPresent.has(field.key),
-        );
-        if (!hasAnyValue) return null;
-
-        return (
-          <Card key={section} title={t(`customers.sections.${section}`)}>
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {fields.map((field) => {
-                const hasEncryptedValue = encryptedFieldsPresent.has(field.key);
-                const rawValue = values[field.key] ?? null;
-                if (rawValue === null && !hasEncryptedValue) return null;
-
-                return (
-                  <CustomerProfileField
-                    key={field.key}
-                    customerId={row.id}
-                    fieldKey={field.key}
-                    label={localised(field.label, locale)}
-                    value={rawValue}
-                    hasEncryptedValue={hasEncryptedValue}
-                    sensitive={isSensitiveField(field.key)}
-                    canReveal={canReveal}
-                  />
-                );
-              })}
-            </dl>
-          </Card>
-        );
-      })}
+      <CustomerProfileSections
+        customerId={row.id}
+        sections={sectionsData}
+        canUpdate={canUpdate}
+        canReveal={canReveal}
+      />
 
       {row.notes ? (
         <Card title={t('customers.notes')}>

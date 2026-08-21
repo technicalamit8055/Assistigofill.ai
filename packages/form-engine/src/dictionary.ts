@@ -387,6 +387,22 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     inputTypes: ['select-one', 'text'],
   },
   {
+    customerField: 'customer.address.sub_division',
+    synonyms: [
+      'sub division',
+      'subdivision',
+      'sub-division',
+      'sub divisional',
+      'अनुमंडल',
+      'उपखंड',
+      'उप-खंड',
+      'उप मंडल',
+    ],
+    attributes: ['subdivision', 'sub division', 'anumandal'],
+    negative: ['permanent'],
+    inputTypes: ['select-one', 'text'],
+  },
+  {
     customerField: 'customer.address.state',
     synonyms: ['state', 'state ut', 'राज्य'],
     attributes: ['state', 'stateid'],
@@ -428,6 +444,12 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     customerField: 'customer.permanent_address.state',
     synonyms: ['permanent state', 'state permanent', 'स्थायी राज्य'],
     attributes: ['permanentstate', 'perm state'],
+    inputTypes: ['select-one', 'text'],
+  },
+  {
+    customerField: 'customer.permanent_address.sub_division',
+    synonyms: ['permanent sub division', 'sub division permanent', 'स्थायी अनुमंडल'],
+    attributes: ['permanentsubdivision', 'perm sub division'],
     inputTypes: ['select-one', 'text'],
   },
   {
@@ -497,6 +519,20 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     inputTypes: ['text'],
     transform: 'text.upper',
   },
+  {
+    customerField: 'customer.bpl_card_number',
+    synonyms: [
+      'bpl card number',
+      'bpl card no',
+      'bpl no',
+      'bpl number',
+      'below poverty line card number',
+      'बीपीएल कार्ड नंबर',
+      'बीपीएल संख्या',
+    ],
+    attributes: ['bplcardno', 'bplno', 'bplcard', 'bplnumber'],
+    inputTypes: ['text', 'number'],
+  },
 
   // --- education -----------------------------------------------------------
   {
@@ -546,6 +582,12 @@ export const MAPPING_DICTIONARY: readonly DictionaryEntry[] = [
     customerField: 'customer.certificate.caste.number',
     synonyms: ['caste certificate number', 'caste certificate no', 'जाति प्रमाण पत्र संख्या'],
     attributes: ['castecertno', 'castecertificateno'],
+    inputTypes: ['text'],
+  },
+  {
+    customerField: 'customer.certificate.caste.sub_caste',
+    synonyms: ['sub caste', 'subcaste', 'sub-caste', 'उप जाति', 'उपजाति', 'उप-जाति'],
+    attributes: ['subcaste', 'sub caste'],
     inputTypes: ['text'],
   },
   {

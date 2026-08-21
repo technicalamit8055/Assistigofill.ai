@@ -148,15 +148,17 @@ describe('bihar rtps — mapping', () => {
     expect(byField.get('customer.address.state')).toContain('राज्य');
   });
 
-  it('never puts the district into the sub-division dropdown', () => {
-    // अनुमंडल sits between district and block in Bihar's hierarchy and has no equivalent in the
-    // customer registry. A district name in it is a rejected application, not a cosmetic slip.
+  it('maps the sub-division to its own field, never to district', () => {
+    // अनुमंडल sits between district and block in Bihar's hierarchy and has its own field in the
+    // registry (customer.address.sub_division). A district name in it is a rejected application,
+    // not a cosmetic slip, so the two must never be confused in either direction.
     const { mappings, detection } = runPipeline(loadFixture());
     const subDivision = detection.fields.find((field) => field.labelText?.includes('अनुमंडल'));
     expect(subDivision).toBeDefined();
 
     const mapping = mappings.find((entry) => entry.signature === subDivision?.signature);
-    expect(mapping?.customerField).toBeNull();
+    expect(mapping?.customerField).toBe('customer.address.sub_division');
+    expect(mapping?.customerField).not.toBe('customer.address.district');
   });
 
   it('never puts a state into the local-body-type dropdown', () => {
@@ -250,7 +252,9 @@ describe('bihar rtps — fill', () => {
 
     const subDivision = detection.fields.find((field) => field.labelText?.includes('अनुमंडल'));
     expect(doc.querySelector<HTMLSelectElement>('#attr_2005')?.value).toBe('');
-    // It was never even instructed, because nothing maps to it.
+    // It maps to customer.address.sub_division, but this demo profile has no value for that
+    // field, so it is never instructed rather than being filled with a guess (§14.3 transforms
+    // never invent data).
     expect(results.some((result) => result.signature === subDivision?.signature)).toBe(false);
   });
 

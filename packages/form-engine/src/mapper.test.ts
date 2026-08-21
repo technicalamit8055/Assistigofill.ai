@@ -307,6 +307,51 @@ describe('mapper — address defaults', () => {
   });
 });
 
+describe('mapper — sub-division, sub-caste and BPL card (§11.2 registry expansion)', () => {
+  it('maps the Bihar RTPS sub-division field, in English and Hindi, never to district', () => {
+    const { mappings } = propose([
+      field({
+        signature: 'a',
+        labelText: 'अनुमंडल / Sub-Division',
+        tagName: 'select',
+        inputType: 'select-one',
+      }),
+      field({ signature: 'b', labelText: 'District', tagName: 'select', inputType: 'select-one' }),
+    ]);
+
+    expect(mappings[0]?.customerField).toBe('customer.address.sub_division');
+    expect(mappings[1]?.customerField).toBe('customer.address.district');
+  });
+
+  it('keeps a permanent sub-division distinct from the current one', () => {
+    const { mappings } = propose([
+      field({ signature: 'a', labelText: 'Permanent Sub Division' }),
+    ]);
+    expect(mappings[0]?.customerField).toBe('customer.permanent_address.sub_division');
+  });
+
+  it('maps sub-caste and always requires review, like the category it refines', () => {
+    const { mappings } = propose(
+      [field({ signature: 'a', labelText: 'Sub Caste' })],
+      { customerValues: { ...CUSTOMER, 'customer.certificate.caste.sub_caste': 'Yadav' } },
+    );
+    expect(mappings[0]?.customerField).toBe('customer.certificate.caste.sub_caste');
+    expect(mappings[0]?.reviewRequired).toBe(true);
+  });
+
+  it('maps a BPL card number field in English and Hindi', () => {
+    // "Card Number" / "कार्ड नंबर" are deliberately not used here: they are payment-card
+    // markers in safety.ts (§14.5, §19.7) and would classify the field as a payment field
+    // before the dictionary ever runs — the correct behaviour, not something to route around.
+    const { mappings } = propose([
+      field({ signature: 'a', labelText: 'BPL Card No', name: 'bplCardNo' }),
+      field({ signature: 'b', labelText: 'बीपीएल संख्या' }),
+    ]);
+    expect(mappings[0]?.customerField).toBe('customer.bpl_card_number');
+    expect(mappings[1]?.customerField).toBe('customer.bpl_card_number');
+  });
+});
+
 describe('buildFillInstructions', () => {
   const fields = [
     field({ signature: 'name', labelText: "Applicant's Name", name: 'applicant_name' }),

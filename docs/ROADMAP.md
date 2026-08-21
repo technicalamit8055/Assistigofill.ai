@@ -184,6 +184,14 @@ Done (added since):
 - [x] Fixed: a `<select>`'s nearby text included its own option labels, so options acted as
       naming signals. Plus `ownTextOnly` for dictionary entries whose synonyms are container
       words ("address"), which were claiming every field under a matching section heading.
+- [x] `customer.address.sub_division` (and `customer.permanent_address.sub_division`) added to
+      the field registry — RTPS needs अनुमंडल to complete the district → sub-division → block
+      chain. No migration needed: address parts live in the existing `address_json` JSONB
+      column, not a first-class column, so this was a registry entry plus dictionary and adapter
+      wiring, not a schema change. `bihar-rtps-serviceonline`'s `block` field now `dependsOn`
+      `sub_division` instead of `district` directly. Also added: `customer.bpl_card_number`
+      (identity, encrypted) and `customer.certificate.caste.sub_caste` (certificates, high-risk,
+      always reviewed like the category it refines).
 
 Remaining:
 
@@ -194,10 +202,6 @@ Remaining:
 - [ ] Adapter admin / import UI and the health dashboard
 - [ ] `POST /api/form-reports`
 - [ ] AI-assisted mapping (priority 5), gated on org opt-in
-- [ ] `customer.address.sub_division` in the field registry — RTPS needs अनुमंडल to complete the
-      district → sub-division → block chain, and without it Block is reported as
-      `dependent_not_ready` until the operator picks the sub-division by hand. Registry change,
-      so it needs a migration and a product-owner decision, not a quiet addition
 
 ## Phase 6 — Document tools ☐
 

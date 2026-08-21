@@ -23,6 +23,8 @@ export type FieldProps = {
   required?: boolean;
   /** Renders the masked-value warning used for sensitive fields (spec §16.2). */
   sensitive?: boolean;
+  /** Text shown in the sensitive badge. The caller supplies a translated string. */
+  sensitiveLabel?: string;
   children: ReactNode;
   className?: string;
 };
@@ -34,6 +36,7 @@ export function Field({
   error,
   required,
   sensitive,
+  sensitiveLabel,
   children,
   className,
 }: FieldProps) {
@@ -51,7 +54,7 @@ export function Field({
         ) : null}
         {sensitive ? (
           <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800">
-            sensitive
+            {sensitiveLabel ?? 'sensitive'}
           </span>
         ) : null}
       </label>
@@ -124,6 +127,7 @@ export function TextField({
   error,
   required,
   sensitive,
+  sensitiveLabel,
   className,
   ...inputProps
 }: Omit<FieldProps, 'children' | 'htmlFor'> & InputProps) {
@@ -136,6 +140,7 @@ export function TextField({
       error={error}
       required={required}
       sensitive={sensitive}
+      sensitiveLabel={sensitiveLabel}
       className={className}
     >
       <Input id={id} invalid={Boolean(error)} required={required} {...inputProps} />

@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
 
   return (
-    <html lang={locale} className={`${inter.variable} ${jakarta.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh font-sans antialiased">
         <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>

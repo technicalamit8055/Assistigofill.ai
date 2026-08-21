@@ -49,6 +49,7 @@ describe('customer field registry', () => {
       'block',
       'police_station',
       'district',
+      'sub_division',
       'state',
       'pincode',
       'country',
@@ -57,6 +58,31 @@ describe('customer field registry', () => {
       expect(CUSTOMER_FIELD_BY_KEY.has(`customer.address.${part}`), part).toBe(true);
       expect(CUSTOMER_FIELD_BY_KEY.has(`customer.permanent_address.${part}`), part).toBe(true);
     }
+  });
+});
+
+describe('newly added fields (sub-division, sub-caste, BPL card)', () => {
+  it('adds the sub-division tier between district and block for both address blocks', () => {
+    expect(getCustomerField('customer.address.sub_division')?.sensitivity).toBe('normal');
+    expect(getCustomerField('customer.permanent_address.sub_division')?.sensitivity).toBe('normal');
+    expect(isSensitiveField('customer.address.sub_division')).toBe(false);
+  });
+
+  it('always reviews sub-caste, like the caste category it refines', () => {
+    const field = getCustomerField('customer.certificate.caste.sub_caste');
+    expect(field?.sensitivity).toBe('high_risk');
+    expect(requiresReview('customer.certificate.caste.sub_caste')).toBe(true);
+    expect(field?.storage).toEqual({
+      kind: 'json',
+      column: 'certificates_json',
+      path: 'caste.sub_caste',
+    });
+  });
+
+  it('encrypts the BPL card number rather than storing it in a plaintext column', () => {
+    expect(ENCRYPTED_FIELD_KEYS.has('customer.bpl_card_number')).toBe(true);
+    expect(isSensitiveField('customer.bpl_card_number')).toBe(true);
+    expect(requiresReview('customer.bpl_card_number')).toBe(false);
   });
 });
 

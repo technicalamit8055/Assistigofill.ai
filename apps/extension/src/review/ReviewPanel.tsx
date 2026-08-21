@@ -20,6 +20,7 @@ import {
   HelpIcon,
   LinkIcon,
   Mark,
+  RefreshIcon,
   ScanIcon,
   ShieldIcon,
   SparkIcon,
@@ -189,6 +190,8 @@ export function ReviewPanel() {
     setError(null);
     setResults(null);
     setReported(false);
+    // A fresh reading of the page invalidates edits keyed to the previous detection's signatures.
+    setEdits({});
 
     const detected = await send<DetectionPayload>({ type: 'DETECT_FIELDS' });
     if (!detected.ok) {
@@ -257,6 +260,14 @@ export function ReviewPanel() {
 
     setResults(response.data.results);
     setStage('done');
+  };
+
+  // Re-checks the paired session and, if a page has already been read, re-reads it — so a
+  // stale customer selection or a form that changed after detection can be caught without a
+  // full disconnect/reconnect.
+  const refresh = async () => {
+    await refreshSession();
+    if (proposal) await detect();
   };
 
   const toggle = (signature: string) => {
@@ -344,7 +355,22 @@ export function ReviewPanel() {
   return (
     <div className="app">
       <Header
-        right={<span className="badge badge-brand truncate">{session.organizationName}</span>}
+        right={
+          <div className="row" style={{ minWidth: 0, gap: 6 }}>
+            <button
+              type="button"
+              className="btn-ghost tiny"
+              style={{ padding: 6, flexShrink: 0 }}
+              title="Refresh"
+              aria-label="Refresh"
+              disabled={stage === 'detecting' || stage === 'filling'}
+              onClick={() => void refresh()}
+            >
+              <RefreshIcon size={14} className={stage === 'detecting' ? 'icon-spin' : undefined} />
+            </button>
+            <span className="badge badge-brand truncate">{session.organizationName}</span>
+          </div>
+        }
       />
 
       <div className="panel stack">

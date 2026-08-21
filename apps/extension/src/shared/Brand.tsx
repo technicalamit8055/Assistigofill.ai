@@ -144,3 +144,11 @@ export const HelpIcon = ({ size = 14, className }: IconProps) =>
     <path key="q" d="M9.5 9.3a2.6 2.6 0 0 1 5-.9c0 1.7-2 1.9-2.3 3.4" />,
     <path key="d" d="M12 16.8h.01" />,
   ]);
+
+export const RefreshIcon = ({ size = 14, className }: IconProps) =>
+  svg(size, className, [
+    <path key="a" d="M3 12a9 9 0 0 1 15.5-6.3L21 8" />,
+    <path key="b" d="M21 3v5h-5" />,
+    <path key="c" d="M21 12a9 9 0 0 1-15.5 6.3L3 16" />,
+    <path key="d" d="M3 21v-5h5" />,
+  ]);
